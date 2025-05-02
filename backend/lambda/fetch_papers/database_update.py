@@ -11,6 +11,8 @@ import json
 import re
 import psycopg2
 import psycopg2.extras
+from datetime import datetime, timedelta
+
 
 class ArxivDB:
     def __init__(self, local=True):
@@ -83,7 +85,7 @@ class ArxivDB:
         self.conn.commit()
         
 dotenv.load_dotenv()
-date = "20250424"
+date = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
 max_results = 10
 db = ArxivDB(local=True)  
 with libreq.urlopen(f'https://export.arxiv.org/api/query?search_query=submittedDate:[{date}0000+TO+{date}2459]&start=0&max_results={max_results}') as url:

@@ -152,6 +152,15 @@ async def save_paper(paper: Paper, current_user=Depends(get_current_user)):
     cursor.close(); conn.close()
     return {"msg": "Paper saved"}
 
+@app.get("/papers/random")
+async def get_random_papers():
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute("SELECT * FROM arxiv_papers ORDER BY RANDOM() LIMIT 10")
+    papers = cursor.fetchall()
+    cursor.close(); conn.close()
+    return {"papers": papers}
+
 @app.post("/papers/like")
 async def like_paper(paper_id: str = Query(...), current_user=Depends(get_current_user)):
     conn   = get_db()
