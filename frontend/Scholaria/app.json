@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "scholaria",
+    "slug": "scholaria",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo2.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/spashscreen.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2F80ED"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo2.png",
+        "backgroundColor": "#1c7ae4"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "server",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://scholaria.dev/"
+        }
+      ],
+      "expo-font",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
