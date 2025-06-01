@@ -39,14 +39,14 @@ export async function PATCH(request: Request) {
       }
   
       // Expecting JSON: { affiliations: string[], interests: string[], role: string, profileImage: string }
-      const { affiliations, interests, role, profileImage } = await request.json();
+      const { affiliations, interests, role, profile_image_url } = await request.json();
   
       const updatedUser = await updateUser(
         clerkId,
         affiliations,
         interests,
-        role,
-        profileImage // this is the Cloudinary URL
+        role, 
+        profile_image_url
       );
       return Response.json({ data: updatedUser }, { status: 200 });
     } catch (error) {

@@ -34,7 +34,6 @@ const SignUp = () => {
   const onSignUpPress = async () => {
     if (!isLoaded) return
 
-    console.log(user.email, user.password)
 
     // Start sign-up process using email and password provided
     try {
@@ -122,24 +121,30 @@ const SignUp = () => {
           <InputField 
             label="Name"
             placeholder="Enter your name"
+            placeholderTextColor="gray"
             icon={icons.person}
             value={user.name}
             onChangeText={(name) => setUser({ ...user, name: name })}
+            className="text-black"
           />
           <InputField 
             label="Email"
             placeholder="Enter your email"
+            placeholderTextColor="gray"
             icon={icons.email}
             value={user.email}
             onChangeText={(email) => setUser({ ...user, email: email })}
+            className="text-black"
           />
           <InputField 
             label="Password"
             placeholder="Enter your password"
+            placeholderTextColor="gray"
             icon={icons.lock}
             secureTextEntry={true}
             value={user.password}
             onChangeText={(password) => setUser({ ...user, password: password })}
+            className="text-black"
           />
           <CustomButton
               title="Sign Up"

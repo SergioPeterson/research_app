@@ -76,14 +76,27 @@ export async function getUserByClerkId(clerkId: string) {
  * @param profileImage - The profile image of the user
  * @returns The user object
  */
-export async function updateUser(clerkId: string, affiliations: string[], interests: string[], role: string, profileImage: string) {
+export async function updateUser(clerkId: string, affiliations: string[], interests: string[], role: string, profile_image_url: string) {
   if (dbIsLocal) {
     const pool = getLocalPool();
-    const res = await pool.query("UPDATE users SET affiliations = $1, interests = $2, role = $3, profile_image_url = $4 WHERE clerk_id = $5", [affiliations, interests, role, profileImage, clerkId]);
+    console.log("Updating user in database");
+    console.log("clerkId", clerkId);
+    console.log("affiliations", affiliations);
+    console.log("interests", interests);
+    console.log("role", role);
+    console.log("profile_image_url", profile_image_url);
+    const res = await pool.query("UPDATE users SET affiliations = $1, interests = $2, role = $3, profile_image_url = $4 WHERE clerk_id = $5", [affiliations, interests, role, profile_image_url, clerkId]);
+    console.log("Updated user in database");
     return res.rows[0];
   } else {
     const sql = getNeonClient();
-    const res = await sql`UPDATE users SET affiliations = ${affiliations}, interests = ${interests}, role = ${role}, profile_image_url = ${profileImage} WHERE clerk_id = ${clerkId}`;
+    console.log("Updating user in database");
+    console.log("clerkId", clerkId);
+    console.log("affiliations", affiliations);
+    console.log("interests", interests);
+    console.log("role", role);
+    console.log("profile_image_url", profile_image_url);
+    const res = await sql`UPDATE users SET affiliations = ${affiliations}, interests = ${interests}, role = ${role}, profile_image_url = ${profile_image_url} WHERE clerk_id = ${clerkId}`;
     return res[0];
   }
 }

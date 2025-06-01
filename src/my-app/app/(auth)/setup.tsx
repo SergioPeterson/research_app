@@ -1,26 +1,33 @@
 import CustomButton from "@/components/CustomButton";
 import { fetchAPI } from "@/lib/fetch";
 import { useUser } from "@clerk/clerk-expo";
-import { Picker } from "@react-native-picker/picker"; // <-- Replace Select with Picker
+import { Picker } from "@react-native-picker/picker";
+import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    SafeAreaView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-
 const Setup = () => {
-  const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME!;
-  const CLOUDINARY_UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET!;
-  const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+  const {
+    CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_UPLOAD_PRESET,
+  } = Constants.expoConfig!.extra as {
+    CLOUDINARY_CLOUD_NAME: string;
+    CLOUDINARY_UPLOAD_PRESET: string;
+  };
+  const CLOUDINARY_UPLOAD_URL = 
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
   const { user } = useUser();
   const [affiliations, setAffiliations] = useState<string[]>([]);
   const [newAffiliation, setNewAffiliation] = useState("");
@@ -73,17 +80,19 @@ const Setup = () => {
       });
       if (pickerResult.canceled) return;
   
-      // 3) Convert local URI to blob
       setUploading(true);
       const localUri = pickerResult.assets[0].uri;
-      const response = await fetch(localUri);
-      const blob = await response.blob();
-  
-      // 4) Upload to Cloudinary via unsigned preset
+
+      // 3) Build FormData using RN conventions:
       const formData = new FormData();
-      formData.append("file", blob);
+      formData.append("file", {
+        uri: localUri,
+        name: "upload.jpg",
+        type: "image/jpeg",
+      } as any);
       formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
   
+      // 4) POST to Cloudinary
       const cloudRes = await fetch(CLOUDINARY_UPLOAD_URL, {
         method: "POST",
         body: formData,
@@ -93,7 +102,6 @@ const Setup = () => {
       if (!cloudRes.ok) {
         console.error("Cloudinary upload error:", cloudData);
         Alert.alert("Upload failed", "Could not upload image. Please try again.");
-        setUploading(false);
         return;
       }
   
@@ -121,7 +129,7 @@ const Setup = () => {
           affiliations,
           interests,
           role,
-          profileImage: profileImageUrl,
+          profile_image_url: profileImageUrl,
         }),
       });
       router.push("/(root)/(tabs)/home");
@@ -138,13 +146,14 @@ const Setup = () => {
 
         {/* --- Affiliations Section --- */}
         <View className="mb-6">
-          <Text className="text-lg font-semibold mb-2">Affiliations</Text>
+          <Text className="text-lg font-semibold mb-2 text-black">Affiliations</Text>
           <View className="flex-row mb-2">
             <TextInput
               className="flex-1 border border-gray-300 rounded-lg p-3 mr-2"
               value={newAffiliation}
               onChangeText={setNewAffiliation}
               placeholder="Add an affiliation"
+              placeholderTextColor="gray"
             />
             <TouchableOpacity
               onPress={addAffiliation}
@@ -168,13 +177,14 @@ const Setup = () => {
 
         {/* --- Interests Section --- */}
         <View className="mb-6">
-          <Text className="text-lg font-semibold mb-2">Interests</Text>
+          <Text className="text-lg font-semibold mb-2 text-black">Interests</Text>
           <View className="flex-row mb-2">
             <TextInput
               className="flex-1 border border-gray-300 rounded-lg p-3 mr-2"
               value={newInterest}
               onChangeText={setNewInterest}
               placeholder="Add an interest"
+              placeholderTextColor="gray"
             />
             <TouchableOpacity
               onPress={addInterest}
@@ -198,7 +208,7 @@ const Setup = () => {
 
         {/* --- Role Section using Picker --- */}
         <View className="mb-6">
-          <Text className="text-lg font-semibold mb-2">Role</Text>
+          <Text className="text-lg font-semibold mb-2 text-black">Role</Text>
           <View className="border border-gray-300 rounded-lg p-1">
             <Picker
               selectedValue={role}
@@ -215,7 +225,7 @@ const Setup = () => {
 
         {/* --- Profile Image Section --- */}
         <View className="mb-6">
-          <Text className="text-lg font-semibold mb-2">Profile Image</Text>
+          <Text className="text-lg font-semibold mb-2 text-black">Profile Image</Text>
 
           {/* Show preview if already uploaded */}
           {profileImageUrl ? (

@@ -64,17 +64,21 @@ const SignIn = () => {
           <InputField 
             label="Email"
             placeholder="Enter your email"
+            placeholderTextColor="gray"
             icon={icons.email}
             value={user.email}
             onChangeText={(email) => setUser({ ...user, email: email })}
+            className="text-black"
           />
           <InputField 
             label="Password"
             placeholder="Enter your password"
+            placeholderTextColor="gray"
             icon={icons.lock}
             secureTextEntry={true}
             value={user.password}
             onChangeText={(password) => setUser({ ...user, password: password })}
+            className="text-black"
           />
           <CustomButton
               title="Sign In"

@@ -37,6 +37,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "CLOUDINARY_CLOUD_NAME": "dnwq6q559",
+      "CLOUDINARY_UPLOAD_PRESET": "unsigned_profile_pics"
     }
   }
 }
