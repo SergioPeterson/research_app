@@ -15,38 +15,48 @@
 | comment | text | Additional comments |
 | category | string | Paper category |
 | link | string | URL to paper |
+
+#### paper_inference
+| Column | Type | Description |
+|--------|------|-------------|
+| paper_id | string | ArXiv paper PRIMARY KEY |
 | summary | text | Generated summary |
 | keywords | string[] | Array of keywords |
 | organizations | string[] | Array of organizations |
 
+
 #### users
 | Column | Type | Description |
 |--------|------|-------------|
-| id | integer | Primary key |
+| clerk_id | string | Clerk authentication ID |
 | name | string | User's full name |
 | email | string | User's email address |
-| clerk_id | string | Clerk authentication ID |
-| org | string | User's organization |
+| affiliations | string[] | User's Affiliations |
 | interests | string[] | Array of user interests |
+| role | string | Role of user |
+| permisions | string | Permissions of user (Admin / Researcher / User) defaulted to User|
+| profile_image_url | TEXT | Image file to a storage service |
+
+
 
 #### user_likes
 | Column | Type | Description |
 |--------|------|-------------|
-| user_id | integer | Foreign key to users |
-| paper_id | string | Foreign key to arxiv_papers |
+| user_id | string | Foreign key to users |
+| paper_id | id | Foreign key to arxiv_papers |
 
 #### user_saves
 | Column | Type | Description |
 |--------|------|-------------|
-| user_id | integer | Foreign key to users |
-| paper_id | string | Foreign key to arxiv_papers |
+| user_id | string | Foreign key to users |
+| paper_id | id | Foreign key to arxiv_papers |
 
 #### recommendations
 | Column | Type | Description |
 |--------|------|-------------|
 | id | integer | Primary key |
-| user_id | integer | Foreign key to users |
-| paper_ids | integer[] | Foreign key to arxiv_papers |
+| user_id | string | Foreign key to users |
+| paper_ids | string[] | Foreign key to arxiv_papers |
 | updated_at | timestamp | Last update timestamp |
 
 ## API Endpoints

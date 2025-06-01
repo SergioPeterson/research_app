@@ -27,7 +27,6 @@ const SignUp = () => {
       code: "",
     }
   )
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const { isLoaded, signUp, setActive } = useSignUp()
   const router = useRouter()
 
@@ -43,7 +42,6 @@ const SignUp = () => {
         emailAddress: user.email,
         password: user.password,
       })
-
       // Send user an email with verification code
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
 
@@ -52,7 +50,9 @@ const SignUp = () => {
       setVerification({
         ...verification,
         state: "pending"
-      })
+      })  
+      
+
     } catch (err: any) {
       // See https://clerk.com/docs/custom-flows/error-handling
       // for more info on error handling
@@ -76,9 +76,9 @@ const SignUp = () => {
         await fetchAPI('/(api)/user', {
           method: 'POST',
           body: JSON.stringify({
+            clerkId: signUpAttempt.createdUserId,
             name: user.name,
             email: user.email,
-            clerkId: signUpAttempt.createdUserId,
           }),
         });
 
@@ -158,7 +158,11 @@ const SignUp = () => {
 
             <ReactNativeModal 
             isVisible={verification.state === "pending"}
-            onModalHide={() => setShowSuccessModal(true)}
+            onModalHide={() => 
+              {
+                router.push('/(auth)/setup')
+              }
+            }
             >
               <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
                 <Text className="text-2xl font-JakartaExtraBold mb-2">
@@ -189,29 +193,6 @@ const SignUp = () => {
               </View>
             </ReactNativeModal>
 
-
-            <ReactNativeModal isVisible={showSuccessModal}>
-              <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
-                <Image source={images.check} className="w-[110px] h-[110px] mx-auto my-5" />
-
-                <Text className="text-3xl font-JakartaBold text-center">
-                  Verified
-                </Text>
-
-                <Text className="text-base text-gray-400 font-Jakarta text-center">
-                  You have successfully verified your account.
-                </Text>
-
-                <CustomButton
-                  title="Browse Home"
-                  onPress={() => {
-                    setShowSuccessModal(false)
-                    router.push('/(root)/(tabs)/home')
-                  }}
-                  className="mt-5"
-                />
-              </View>
-            </ReactNativeModal>
         </View>
       </View>
     </ScrollView>

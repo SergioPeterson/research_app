@@ -9,13 +9,13 @@ import "dotenv/config";
  */
 export async function POST(request: Request) {
   try {
-    const { name, email, clerkId } = await request.json();
+    const { clerkId, name, email } = await request.json();
 
     if (!name || !email || !clerkId) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const user = await insertUser({ name, email, clerkId });
+    const user = await insertUser({ clerkId, name, email });
     return new Response(JSON.stringify(user), { status: 201 });
   } catch (error) {
     console.error(error);
