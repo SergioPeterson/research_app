@@ -31,6 +31,7 @@ import onboarding1 from "@/assets/images/onboarding1.png";
 import onboarding2 from "@/assets/images/onboarding2.png";
 import onboarding3 from "@/assets/images/onboarding3.png";
 import signUpCar from "@/assets/images/signup-car.png";
+import { default as bookmark, default as bookmarkO, default as heart, default as heartO } from "react-native-vector-icons/FontAwesome";
 
 export const images = {
   onboarding1,
@@ -69,6 +70,10 @@ export const icons = {
   star,
   target,
   to,
+  heart,
+  heartO,
+  bookmark,
+  bookmarkO,
 };
 
 export const onboarding = [

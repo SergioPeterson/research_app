@@ -120,11 +120,11 @@ Create a new user.
 }
 ```
 
-#### Update User
+#### PATCH User
 ```http
 PUT /api/users/:id
 ```
-Update user information.
+PATCH user information.
 
 **Response Codes**
 - `200 OK`: User updated successfully

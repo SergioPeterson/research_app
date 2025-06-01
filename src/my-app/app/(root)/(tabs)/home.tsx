@@ -1,3 +1,4 @@
+import PaperDetailModal from "@/components/PaperDetailModal";
 import { icons } from "@/constants";
 import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-expo";
 import { Link, router } from "expo-router";
@@ -16,6 +17,8 @@ const Home = () => {
   const { signOut } = useClerk();
   const [userData, setUserData] = useState<any>(null);
   const [papers, setPapers] = useState<any[]>([]);
+  const [selectedPaper, setSelectedPaper] = useState<any>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -42,8 +45,6 @@ const Home = () => {
       
       const result1 = await paper1.json();
       const result2 = await paper2.json();
-      // console.log("result1 :", result1);
-      // console.log("result2 :", result2);
       // Then fetch all papers
       const response = await fetch(`/(api)/paper`);
       const result = await response.json();
@@ -97,8 +98,8 @@ const Home = () => {
     return (
       <TouchableOpacity
         onPress={() => {
-          /* e.g. navigate to a “PaperDetail” screen, passing item.paper_id */
-          // router.push(`/paper/${item.paper_id}`);
+          setSelectedPaper(item);
+          setIsModalVisible(true);
         }}
         className="bg-white rounded-2xl p-4 mb-4 shadow-md mx-4"
       >
@@ -171,7 +172,7 @@ const Home = () => {
           ListHeaderComponent={() => (
             <View className="px-4 pt-6 pb-4 flex-row items-center justify-between">
               <Text className="text-2xl font-JakartaBold">
-                Welcome back, {userData?.name || "Researcher"}
+                Welcome back, {userData?.name.split(" ")[0] || "Researcher"}
               </Text>
               <TouchableOpacity
                 onPress={handleLogout}
@@ -181,6 +182,14 @@ const Home = () => {
               </TouchableOpacity>
             </View>
           )}
+        />
+        <PaperDetailModal
+          paper={selectedPaper}
+          visible={isModalVisible}
+          onClose={() => {
+            setIsModalVisible(false);
+            setSelectedPaper(null);
+          }}
         />
       </SignedIn>
 

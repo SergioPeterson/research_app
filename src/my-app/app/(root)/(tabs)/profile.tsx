@@ -51,7 +51,7 @@ const Profile = () => {
 
         {/* Profile Content */}
         <View className="px-4">
-          {/* Profile Image and Name */}
+          {/* Profile data */}
           <View className="items-center mb-6">
             <View className="w-24 h-24 rounded-full bg-gray-200 mb-3 items-center justify-center">
               {user?.imageUrl ? (
@@ -69,6 +69,7 @@ const Profile = () => {
               {userData?.name || user?.fullName || "User"}
             </Text>
             <Text className="text-gray-500">{user?.primaryEmailAddress?.emailAddress}</Text>
+            <Text className="text-blue-500 text-lg font-bold">{userData?.role}</Text>
           </View>
 
           {/* User Information Cards */}
@@ -101,13 +102,6 @@ const Profile = () => {
               </View>
             </View>
 
-            {/* Role */}
-            <View className="bg-white rounded-2xl p-4 shadow-sm mb-4">
-              <Text className="text-lg font-JakartaBold text-gray-900 mb-2">Role</Text>
-              <Text className="text-gray-700">
-                {userData?.role || "No role specified"}
-              </Text>
-            </View>
           </View>
         </View>
       </ScrollView>
