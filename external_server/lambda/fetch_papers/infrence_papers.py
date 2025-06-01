@@ -4,12 +4,12 @@ import re
 import urllib.request as libreq
 import xml.etree.ElementTree as ET
 import pymupdf
-import openai
 import dotenv
 import psycopg2
 import psycopg2.extras
 from datetime import datetime, timedelta
 from google import genai
+from google.genai import types  # for GenerateContentConfig
 
 dotenv.load_dotenv()
 
@@ -26,15 +26,20 @@ class ArxivDB:
             }
             self.conn = psycopg2.connect(**db_params)
         else:
-            # When not local, just grab the single DATABASE_URL (which already has sslmode=require)
             database_url = os.getenv("DATABASE_URL")
             if not database_url:
                 raise RuntimeError("DATABASE_URL is not set in environment")
-            # psycopg2.connect can accept the full connection string
+            # strip trailing percent or whitespace if present
+            database_url = database_url.rstrip("% \t\n\r")
             self.conn = psycopg2.connect(database_url)
 
-        # Use DictCursor so fetchall() returns dict‐like rows
         self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    def paper_inference_exists(self, paper_id: str) -> bool:
+        """Check if a paper has already been inferred"""
+        check_sql = "SELECT EXISTS(SELECT 1 FROM paper_inference WHERE paper_id = %s)"
+        self.cursor.execute(check_sql, (paper_id,))
+        return self.cursor.fetchone()[0]
 
     def insert_paper(self, paper: dict):
         """
@@ -44,6 +49,10 @@ class ArxivDB:
           - keywords  (list[str])
           - organizations (list[str])
         """
+        if self.paper_inference_exists(paper["paper_id"]):
+            print(f"Paper {paper['paper_id']} has already been inferred, skipping...")
+            return
+
         insert_inference_sql = """
           INSERT INTO paper_inference (
             paper_id,
@@ -74,8 +83,7 @@ class ArxivDB:
     def get_uninfrencedPapers(self, limit: int = None):
         """
         Returns a list of dict‐rows from arxiv_papers where there is no entry in paper_inference.
-        Each row will contain at least 'paper_id' and 'link' (so we can fetch the PDF).
-        If `limit` is provided, we only fetch up to that many rows.
+        Each row will contain at least 'paper_id' and 'link'.
         """
         base_sql = """
           SELECT 
@@ -91,7 +99,7 @@ class ArxivDB:
             self.cursor.execute(base_sql, (limit,))
         else:
             self.cursor.execute(base_sql)
-        return self.cursor.fetchall()  # list of DictRow, each with keys 'paper_id' and 'link'
+        return self.cursor.fetchall()
 
 
 # ----------------------------------------------------------
@@ -99,18 +107,20 @@ class ArxivDB:
 # ----------------------------------------------------------
 if __name__ == "__main__":
     max_results = 10
-    db = ArxivDB(local=True)
+    db = ArxivDB(local=False)
     papers = db.get_uninfrencedPapers(limit=max_results)
 
-    # If there are no uninferred papers, exit early
     if not papers:
         print("No uninferred papers found.")
         exit(0)
 
     for row in papers:
         paper_id = row["paper_id"]
-        # The 'link' column in arxiv_papers is something like "https://arxiv.org/abs/XXXX.XXXXX"
-        # We convert it to a PDF URL (replace "/abs/" with "/pdf/" and append ".pdf")
+
+        if db.paper_inference_exists(paper_id):
+            print(f"Paper {paper_id} has already been inferred, skipping...")
+            continue
+
         raw_link = row["link"]  # e.g. "https://arxiv.org/abs/2305.12345v1"
         pdf_url = raw_link.replace("/abs/", "/pdf/") + ".pdf"
 
@@ -130,15 +140,16 @@ if __name__ == "__main__":
             for page in doc:
                 page_text = page.get_text()
                 pdf_text += page_text + "\f"
-            # Remove newlines to reduce token usage:
             pdf_text = pdf_text.replace("\n", " ")
         except Exception as e:
             print(f"Failed to parse PDF for {paper_id}: {e}")
             continue
 
-        # 3) Call Gemini (or OpenAI) to get summary/keywords/organizations
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        prompt = f"""Please analyze this academic paper and provide the following information in JSON format:
+        # 3) Call Gemini to get summary/keywords/organizations
+        try:
+            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+            prompt = f"""Please analyze this academic paper and provide the following information in JSON format:
 Use this JSON schema exactly (keys must match):
 
 {{
@@ -150,20 +161,19 @@ Use this JSON schema exactly (keys must match):
 Paper text (first 4000 characters only; omit the rest to stay within token limits):
 {pdf_text[:4000]}
 """
-        try:
+
             response = client.models.generate_content(
                 model="gemini-1.5-flash",
                 config=types.GenerateContentConfig(
                     system_instruction="You are an expert academic paper analyzer. Return valid JSON only."
                 ),
-                contents=prompt,
+                contents=prompt
             )
-            clean_text = response.text.strip()
-            # Remove triple-backticks if present
-            clean_text = re.sub(r"^```json\s*|\s*```$", "", clean_text, flags=re.MULTILINE)
 
-            # Parse JSON
+            clean_text = response.text.strip()
+            clean_text = re.sub(r"^```json\s*|\s*```$", "", clean_text, flags=re.MULTILINE)
             analysis_json = json.loads(clean_text)
+
         except json.JSONDecodeError:
             print(f"Paper {paper_id}: Response was not valid JSON. Response:\n{clean_text}")
             continue
@@ -171,13 +181,11 @@ Paper text (first 4000 characters only; omit the rest to stay within token limit
             print(f"Paper {paper_id}: Error calling Gemini or parsing response: {e}")
             continue
 
-        # 4) Build a small dict and insert/update into paper_inference
+        # 4) Build a dict and insert into paper_inference
         to_insert = {
             "paper_id": paper_id,
             "summary": analysis_json.get("Summary", ""),
-            # Split comma-separated string into list (strip whitespace). 
-            # If the model returned "NONE", store an empty list instead.
-            "keywords": [] if analysis_json.get("Keywords", "").upper().strip() == "NONE" 
+            "keywords": [] if analysis_json.get("Keywords", "").upper().strip() == "NONE"
                         else [kw.strip() for kw in analysis_json.get("Keywords", "").split(",")],
             "organizations": [] if analysis_json.get("Organizations", "").upper().strip() == "NONE"
                              else [org.strip() for org in analysis_json.get("Organizations", "").split(",")],

@@ -31,7 +31,18 @@ class ArxivDB:
         # Use DictCursor so fetchall() returns dict‐like rows
         self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
+    def paper_exists(self, paper_id: str) -> bool:
+        """Check if a paper already exists in the database"""
+        check_sql = "SELECT EXISTS(SELECT 1 FROM arxiv_papers WHERE paper_id = %s)"
+        self.cursor.execute(check_sql, (paper_id,))
+        return self.cursor.fetchone()[0]
+
     def insert_paper(self, paper: dict):
+        # First check if paper exists
+        if self.paper_exists(paper["paper_id"]):
+            print(f"Paper {paper['paper_id']} already exists, skipping...")
+            return
+
         insert_raw_sql = """
         INSERT INTO arxiv_papers (
           paper_id,
@@ -67,12 +78,13 @@ class ArxivDB:
         }
         self.cursor.execute(insert_raw_sql, raw_values)
         self.conn.commit()
+        print(f"Uploaded {paper['link']}")
         
-offset = 1
+offset = 2
 date = (datetime.now() - timedelta(days=offset)).strftime("%Y%m%d")
 print(date)
 max_results = 200
-db = ArxivDB(local=True)  
+db = ArxivDB(local=False)  
 with libreq.urlopen(f'https://export.arxiv.org/api/query?search_query=submittedDate:[{date}0000+TO+{date}2459]&start=0&max_results={max_results}') as url:
     r = url.read()
 
@@ -111,4 +123,3 @@ for entry in root.findall('atom:entry', namespace):
         'category': category
     }
     db.insert_paper(paper_data[paper_id])
-    print(f"Uploaded {link}")
