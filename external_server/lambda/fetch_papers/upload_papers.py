@@ -80,7 +80,7 @@ class ArxivDB:
         self.conn.commit()
         print(f"Uploaded {paper['link']}")
         
-offset = 2
+offset = 6
 date = (datetime.now() - timedelta(days=offset)).strftime("%Y%m%d")
 print(date)
 max_results = 200
