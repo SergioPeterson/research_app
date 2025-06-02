@@ -22,12 +22,30 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [saveCount, setSaveCount] = useState(0);
 
   useEffect(() => {
     if (user?.id && paper?.paper_id) {
       checkLikeAndSaveStatus();
+      fetchLikeAndSaveCounts();
     }
   }, [user?.id, paper?.paper_id]);
+
+  const fetchLikeAndSaveCounts = async () => {
+    try {
+      // Fetch total likes for the paper
+      const likesResponse = await fetch(`/(api)/paper/likes?paperId=${paper.paper_id}`);
+      const likesData = await likesResponse.json();
+      setLikeCount(likesData?.data?.length || 0);
+
+      const savesResponse = await fetch(`/(api)/paper/saves?paperId=${paper.paper_id}`);
+      const savesData = await savesResponse.json();
+      setSaveCount(savesData?.data?.length || 0);
+    } catch (error) {
+      console.error('Error fetching counts:', error);
+    }
+  };
 
   const checkLikeAndSaveStatus = async () => {
     try {
@@ -59,6 +77,7 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
       });
       if (response.ok) {
         setIsLiked(!isLiked);
+        setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -79,6 +98,7 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
       });
       if (response.ok) {
         setIsSaved(!isSaved);
+        setSaveCount(prev => isSaved ? prev - 1 : prev + 1);
       }
     } catch (error) {
       console.error('Error toggling save:', error);
@@ -101,15 +121,21 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
           {/* Header */}
           <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
             <TouchableOpacity onPress={onClose} className="p-2">
-              <Image source={icons.backArrow} className="w-6 h-6" />
+              <Image source={icons.backArrow} className="w-6 h-6" tintColor="black" />
             </TouchableOpacity>
             <View className="flex-row space-x-4">
-              <TouchableOpacity onPress={handleLike} disabled={loading} className="p-2">
-                {isLiked ? <Icon name="heart" size={24} color="black" /> : <Icon name="heart-o" size={24} color="black" />}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleSave} disabled={loading} className="p-2">
-                {isSaved ? <Icon name="bookmark" size={24} color="black" /> : <Icon name="bookmark-o" size={24} color="black" />}
-              </TouchableOpacity>
+              <View className="items-center">
+                <TouchableOpacity onPress={handleLike} disabled={loading} className="p-2">
+                  {isLiked ? <Icon name="heart" size={24} color="black" /> : <Icon name="heart-o" size={24} color="black" />}
+                </TouchableOpacity>
+                <Text className="text-xs text-gray-600">{likeCount}</Text>
+              </View>
+              <View className="items-center">
+                <TouchableOpacity onPress={handleSave} disabled={loading} className="p-2">
+                  {isSaved ? <Icon name="bookmark" size={24} color="black" /> : <Icon name="bookmark-o" size={24} color="black" />}
+                </TouchableOpacity>
+                <Text className="text-xs text-gray-600">{saveCount}</Text>
+              </View>
             </View>
           </View>
 

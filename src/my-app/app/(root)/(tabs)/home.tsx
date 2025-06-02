@@ -1,24 +1,29 @@
 import PaperDetailModal from "@/components/PaperDetailModal";
-import { icons } from "@/constants";
-import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-expo";
-import { Link, router } from "expo-router";
+import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo";
+import Constants from "expo-constants";
+import { Link } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
-  Image,
   SafeAreaView,
   Text,
+  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Home = () => {
+  const isLocal = Constants.expoConfig!.extra?.USE_LOCAL_DATABASE === "true";
   const { user } = useUser();
-  const { signOut } = useClerk();
   const [userData, setUserData] = useState<any>(null);
   const [papers, setPapers] = useState<any[]>([]);
+  const [filteredPapers, setFilteredPapers] = useState<any[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [localDB, setLocalDB] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -41,22 +46,24 @@ const Home = () => {
     try {
       // First fetch specific papers
       const paper1 = await fetch(`/(api)/paper/2505.22947v1`);
-      const paper2 = await fetch(`/(api)/paper/2505.22950v1`);
+      // const paper2 = await fetch(`/(api)/paper/2505.22950v1`);
       
       const result1 = await paper1.json();
-      const result2 = await paper2.json();
-      // Then fetch all papers
-      const response = await fetch(`/(api)/paper`);
+      // const result2 = await paper2.json();
+
+      // Then fetch recommended papers
+      const response = await fetch(`/(api)/recommendation/${user?.id}`);
       const result = await response.json();
       
       if (response.ok) {
         // Combine specific papers with the rest
         const combinedPapers = [
           result1.data,
-          result2.data,
+          // result2.data,
           ...result.data
         ];
         setPapers(combinedPapers);
+        setFilteredPapers(combinedPapers);
       } else {
         console.error("Error fetching papers:", result.error);
       }
@@ -67,14 +74,52 @@ const Home = () => {
 
   useEffect(() => {
     fetchPapers();
+    setLocalDB(isLocal);
+    // console.log("isLocal", isLocal);
   }, []);
 
-  const handleLogout = async () => {
+
+  const handleSearch = async (query: string) => {
+    setIsSearching(true);
+    setSearchQuery(query);
+
+    if (!query.trim()) {
+      setFilteredPapers(papers);
+      setIsSearching(false);
+      return;
+    }
+
+    // First search locally in the papers we already have
+    const localResults = papers.filter(paper => {
+      const searchableText = [
+        paper.title,
+        paper.authors,
+        paper.categories,
+        paper.keywords?.join(' '),
+        paper.organizations?.join(' ')
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      return searchableText.includes(query.toLowerCase());
+    });
+
+    // If we have enough local results (more than 5), use those
+    if (localResults.length >= 5) {
+      setFilteredPapers(localResults);
+      setIsSearching(false);
+      return;
+    }
+
+    // If we don't have enough local results, make an API call
     try {
-      await signOut();
-      router.replace("/(auth)/sign-in");
-    } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
+      const response = await fetch(`/(api)/paper/search?query=${query}`);
+      const result = await response.json();
+      setFilteredPapers(result.data);
+    } catch (error) {
+      console.error("Error searching papers:", error);
+      // Fallback to local results if API call fails
+      setFilteredPapers(localResults);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -160,26 +205,42 @@ const Home = () => {
   return (
     <SafeAreaView className="flex-1 bg-general-500">
       <SignedIn>
+        {localDB ? <Text>Local DB</Text> : <Text></Text>}
         <FlatList
-          data={papers}
+          data={filteredPapers}
           keyExtractor={(item) => item.paper_id}
           renderItem={renderPaperCard}
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center">
-              <Text className="text-gray-200">No papers found</Text>
+              <Text className="text-gray-200">
+                {isSearching ? "Searching..." : "No papers found"}
+              </Text>
             </View>
           }
           ListHeaderComponent={() => (
-            <View className="px-4 pt-6 pb-4 flex-row items-center justify-between">
-              <Text className="text-2xl font-JakartaBold">
-                Welcome back, {userData?.name.split(" ")[0] || "Researcher"}
-              </Text>
-              <TouchableOpacity
-                onPress={handleLogout}
-                className="justify-center items-center w-10 h-10 rounded-full bg-white"
-              >
-                <Image source={icons.out} className="w-5 h-5" />
-              </TouchableOpacity>
+            <View className="px-4 pt-6 pb-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-2xl font-JakartaBold">
+                  Welcome back, {userData?.name.split(" ")[0] || "Researcher"}
+                </Text>
+              </View>
+              
+              {/* Search Bar */}
+              <View className="flex-row items-center bg-white rounded-full px-4 py-2 mb-4">
+                <Icon name="search" size={16} color="#666" style={{ marginRight: 8 }} />
+                <TextInput
+                  className="flex-1 text-base"
+                  placeholder="Search papers by title, authors, keywords..."
+                  value={searchQuery}
+                  onChangeText={(text) => handleSearch(text)}
+                  placeholderTextColor="#666"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => handleSearch("")}>
+                    <Icon name="times-circle" size={16} color="#666" />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )}
         />

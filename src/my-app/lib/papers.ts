@@ -36,6 +36,41 @@ export async function getPaper(paperId: string) {
 }
 
 /**
+ * This function is used to search for papers by title
+ * @param query - The query string
+ * @returns The papers object
+ */
+export async function searchPapers(query: string) {
+    if (dbIsLocal) {
+        const pool = getLocalPool();
+        const queryString = `%${query}%`;
+        const res = await pool.query(`
+            SELECT a.*, 
+                   i.summary, 
+                   i.keywords, 
+                   i.organizations
+            FROM arxiv_papers a
+            LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
+            WHERE a.title ILIKE $1
+            LIMIT 3;
+        `, [queryString]);
+        return res.rows;
+    } else {
+        const sql = getNeonClient();
+        const res = await sql`
+            SELECT a.*, 
+                   i.summary, 
+                   i.keywords, 
+                   i.organizations
+            FROM arxiv_papers a
+            LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
+            WHERE a.title ILIKE $1
+            LIMIT 3;
+        `;
+        return res;
+    }
+}
+/**
  * This function is used to get all papers
  * @returns The papers object
  */

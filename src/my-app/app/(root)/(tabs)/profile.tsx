@@ -1,3 +1,4 @@
+import PaperDetailModal from "@/components/PaperDetailModal";
 import { icons } from "@/constants";
 import { useClerk, useUser } from "@clerk/clerk-expo";
 import Constants from "expo-constants";
@@ -6,12 +7,19 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
+type TabType = 'saved' | 'liked';
 
 const Profile = () => {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [userData, setUserData] = useState<any>(null);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<TabType>('saved');
+  const [savedPapers, setSavedPapers] = useState<any[]>([]);
+  const [likedPapers, setLikedPapers] = useState<any[]>([]);
+  const [selectedPaper, setSelectedPaper] = useState<any>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loadingPapers, setLoadingPapers] = useState(false);
 
   const {
     CLOUDINARY_CLOUD_NAME,
@@ -51,14 +59,12 @@ const Profile = () => {
 
   const pickImageAndUpload = async () => {
     try {
-      // 1) Ask for permissions
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permission.status !== "granted") {
         Alert.alert("Permission required", "We need permission to access your photos.");
         return;
       }
 
-      // 2) Launch image picker
       const pickerResult = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.7,
@@ -70,7 +76,6 @@ const Profile = () => {
       setUploading(true);
       const localUri = pickerResult.assets[0].uri;
 
-      // 3) Build FormData using RN conventions:
       const formData = new FormData();
       formData.append("file", {
         uri: localUri,
@@ -79,7 +84,6 @@ const Profile = () => {
       } as any);
       formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-      // 4) POST to Cloudinary
       const cloudRes = await fetch(CLOUDINARY_UPLOAD_URL, {
         method: "POST",
         body: formData,
@@ -92,7 +96,6 @@ const Profile = () => {
         return;
       }
 
-      // 5) Update user profile in database
       if (user?.id) {
         const updateResponse = await fetch(`/(api)/user/${user.id}`, {
           method: "PATCH",
@@ -107,7 +110,6 @@ const Profile = () => {
         if (!updateResponse.ok) {
           throw new Error("Failed to update profile in database");
         }
-        // Update local state with new data
         const updatedUserData = await updateResponse.json();
         setUserData(updatedUserData.data);
       }
@@ -117,6 +119,69 @@ const Profile = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  const fetchUserPapers = async () => {
+    if (!user?.id) return;
+    setLoadingPapers(true);
+    try {
+      const savedResponse = await fetch(`/(api)/user/${user.id}/saves`);
+      const savedResult = await savedResponse.json();
+      if (savedResponse.ok) {
+        // Fetch paper details for each saved paper
+        const savedPapersWithDetails = await Promise.all(
+          savedResult.data.map(async (paper: any) => {
+            const paperResponse = await fetch(`/(api)/paper/${paper.paper_id}`);
+            const paperData = await paperResponse.json();
+            return { ...paper, paperDetails: paperData.data };
+          })
+        );
+        setSavedPapers(savedPapersWithDetails);
+      }
+
+      const likedResponse = await fetch(`/(api)/user/${user.id}/likes`);
+      const likedResult = await likedResponse.json();
+      if (likedResponse.ok) {
+        // Fetch paper details for each liked paper
+        const likedPapersWithDetails = await Promise.all(
+          likedResult.data.map(async (paper: any) => {
+            const paperResponse = await fetch(`/(api)/paper/${paper.paper_id}`);
+            const paperData = await paperResponse.json();
+            return { ...paper, paperDetails: paperData.data };
+          })
+        );
+        setLikedPapers(likedPapersWithDetails);
+      }
+    } catch (error) {
+      console.error("Error fetching user papers:", error);
+    } finally {
+      setLoadingPapers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserPapers();
+    }
+  }, [user?.id]);
+
+  const renderPaperCard = ({ item }: { item: any }) => {
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedPaper(item.paperDetails);
+          setIsModalVisible(true);
+        }}
+        className="bg-white p-4 rounded-lg mb-2 shadow-sm"
+      >
+        <Text className="text-lg font-JakartaBold text-gray-900">
+          {item.paperDetails?.title || 'Untitled Paper'}
+        </Text>
+        <Text className="text-gray-600 mt-1">
+          {item.paperDetails?.authors?.join(', ') || 'No authors'}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
   return (
@@ -190,9 +255,86 @@ const Profile = () => {
                 )}
               </View>
             </View>
+
+            {/* Saved and Liked Papers */}
+            <View className="bg-white rounded-2xl p-4 shadow-sm mb-4">
+              <Text className="text-lg font-JakartaBold text-gray-900 mb-4">My Papers</Text>
+              
+              {/* Tab Buttons */}
+              <View className="flex-row mb-4">
+                <TouchableOpacity
+                  onPress={() => setActiveTab('saved')}
+                  className={`flex-1 mr-2 py-2 rounded-full ${
+                    activeTab === 'saved' ? 'bg-blue-500' : 'bg-gray-200'
+                  }`}
+                >
+                  <Text
+                    className={`text-center ${
+                      activeTab === 'saved' ? 'text-white' : 'text-gray-700'
+                    }`}
+                  >
+                    Saved
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setActiveTab('liked')}
+                  className={`flex-1 ml-2 py-2 rounded-full ${
+                    activeTab === 'liked' ? 'bg-blue-500' : 'bg-gray-200'
+                  }`}
+                >
+                  <Text
+                    className={`text-center ${
+                      activeTab === 'liked' ? 'text-white' : 'text-gray-700'
+                    }`}
+                  >
+                    Liked
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Papers List */}
+              {loadingPapers ? (
+                <View className="py-4">
+                  <ActivityIndicator size="large" color="#0000ff" />
+                </View>
+              ) : (
+                <View>
+                  {activeTab === 'saved' ? (
+                    savedPapers.length > 0 ? (
+                      savedPapers.map((paper, index) => (
+                        <View key={paper.paper_id || index}>
+                          {renderPaperCard({ item: paper })}
+                        </View>
+                      ))
+                    ) : (
+                      <Text className="text-gray-500 text-center py-4">No saved papers yet</Text>
+                    )
+                  ) : (
+                    likedPapers.length > 0 ? (
+                      likedPapers.map((paper, index) => (
+                        <View key={paper.paper_id || index}>
+                          {renderPaperCard({ item: paper })}
+                        </View>
+                      ))
+                    ) : (
+                      <Text className="text-gray-500 text-center py-4">No liked papers yet</Text>
+                    )
+                  )}
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
+
+      <PaperDetailModal
+        paper={selectedPaper}
+        visible={isModalVisible}
+        onClose={() => {
+          setIsModalVisible(false);
+          setSelectedPaper(null);
+        }}
+      />
     </SafeAreaView>
   );
 };

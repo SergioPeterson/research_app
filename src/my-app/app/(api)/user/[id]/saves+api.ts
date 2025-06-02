@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const clerkId = url.pathname.split("/")[3];
+    console.log(`Called : /user/${clerkId}/saves+api.ts GET`);
     if (!clerkId) {
       return Response.json({ error: "User ID is required" }, { status: 400 });
     }
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
     console.error(error);
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+} 
 
 /**
  * This endpoint is used to add a saved paper by their clerk id and paper id
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
   try {
     const url = new URL(request.url);
     const clerkId = url.pathname.split("/")[3];
+    console.log(`Called : /user/${clerkId}/saves+api.ts POST`);
     if (!clerkId) {
       return Response.json({ error: "User ID is required" }, { status: 400 });
     }
@@ -51,6 +53,7 @@ export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url);
     const clerkId = url.pathname.split("/")[3];
+    console.log(`Called : /user/${clerkId}/saves+api.ts DELETE`);
     if (!clerkId) {
       return Response.json({ error: "User ID is required" }, { status: 400 });
     }
