@@ -1,24 +1,29 @@
 import PaperDetailModal from "@/components/PaperDetailModal";
-import { icons } from "@/constants";
-import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-expo";
-import { Link, router } from "expo-router";
+import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo";
+import Constants from "expo-constants";
+import { Link } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
-  Image,
   SafeAreaView,
   Text,
+  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Home = () => {
+  const isLocal = Constants.expoConfig!.extra?.USE_LOCAL_DATABASE === "true";
   const { user } = useUser();
-  const { signOut } = useClerk();
   const [userData, setUserData] = useState<any>(null);
   const [papers, setPapers] = useState<any[]>([]);
+  const [filteredPapers, setFilteredPapers] = useState<any[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [localDB, setLocalDB] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -57,6 +62,7 @@ const Home = () => {
           ...result.data
         ];
         setPapers(combinedPapers);
+        setFilteredPapers(combinedPapers);
       } else {
         console.error("Error fetching papers:", result.error);
       }
@@ -67,15 +73,41 @@ const Home = () => {
 
   useEffect(() => {
     fetchPapers();
+    setLocalDB(isLocal);
+    // console.log("isLocal", isLocal);
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.replace("/(auth)/sign-in");
-    } catch (err) {
-      console.error(JSON.stringify(err, null, 2));
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setIsSearching(true);
+
+    if (!query.trim()) {
+      setFilteredPapers(papers);
+      setIsSearching(false);
+      return;
     }
+
+    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+    
+    const filtered = papers.filter(paper => {
+      const titleMatch = paper.title?.toLowerCase().includes(query.toLowerCase());
+      const authorsMatch = Array.isArray(paper.authors) 
+        ? paper.authors.some((author: string) => author.toLowerCase().includes(query.toLowerCase()))
+        : paper.authors?.toLowerCase().includes(query.toLowerCase());
+      const keywordsMatch = Array.isArray(paper.keywords)
+        ? paper.keywords.some((keyword: string) => keyword.toLowerCase().includes(query.toLowerCase()))
+        : false;
+      const organizationsMatch = Array.isArray(paper.organizations)
+        ? paper.organizations.some((org: string) => org.toLowerCase().includes(query.toLowerCase()))
+        : false;
+      const categoryMatch = paper.category?.toLowerCase().includes(query.toLowerCase());
+
+      return titleMatch || authorsMatch || keywordsMatch || organizationsMatch || categoryMatch;
+    });
+
+    setFilteredPapers(filtered);
+    setIsSearching(false);
   };
 
   const renderPaperCard = ({ item }: { item: any }) => {
@@ -160,26 +192,42 @@ const Home = () => {
   return (
     <SafeAreaView className="flex-1 bg-general-500">
       <SignedIn>
+        {localDB ? <Text>Local DB</Text> : <Text></Text>}
         <FlatList
-          data={papers}
+          data={filteredPapers}
           keyExtractor={(item) => item.paper_id}
           renderItem={renderPaperCard}
           ListEmptyComponent={
             <View className="flex-1 justify-center items-center">
-              <Text className="text-gray-200">No papers found</Text>
+              <Text className="text-gray-200">
+                {isSearching ? "Searching..." : "No papers found"}
+              </Text>
             </View>
           }
           ListHeaderComponent={() => (
-            <View className="px-4 pt-6 pb-4 flex-row items-center justify-between">
-              <Text className="text-2xl font-JakartaBold">
-                Welcome back, {userData?.name.split(" ")[0] || "Researcher"}
-              </Text>
-              <TouchableOpacity
-                onPress={handleLogout}
-                className="justify-center items-center w-10 h-10 rounded-full bg-white"
-              >
-                <Image source={icons.out} className="w-5 h-5" />
-              </TouchableOpacity>
+            <View className="px-4 pt-6 pb-4">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-2xl font-JakartaBold">
+                  Welcome back, {userData?.name.split(" ")[0] || "Researcher"}
+                </Text>
+              </View>
+              
+              {/* Search Bar */}
+              <View className="flex-row items-center bg-white rounded-full px-4 py-2 mb-4">
+                <Icon name="search" size={16} color="#666" style={{ marginRight: 8 }} />
+                <TextInput
+                  className="flex-1 text-base"
+                  placeholder="Search papers by title, authors, keywords..."
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  placeholderTextColor="#666"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => handleSearch("")}>
+                    <Icon name="times-circle" size={16} color="#666" />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )}
         />

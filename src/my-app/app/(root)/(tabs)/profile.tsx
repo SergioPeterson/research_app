@@ -1,3 +1,4 @@
+import PaperDetailModal from "@/components/PaperDetailModal";
 import { icons } from "@/constants";
 import { useClerk, useUser } from "@clerk/clerk-expo";
 import Constants from "expo-constants";
@@ -6,12 +7,19 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
+type TabType = 'saved' | 'liked';
 
 const Profile = () => {
   const { user } = useUser();
   const { signOut } = useClerk();
   const [userData, setUserData] = useState<any>(null);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<TabType>('saved');
+  const [savedPapers, setSavedPapers] = useState<any[]>([]);
+  const [likedPapers, setLikedPapers] = useState<any[]>([]);
+  const [selectedPaper, setSelectedPaper] = useState<any>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loadingPapers, setLoadingPapers] = useState(false);
 
   const {
     CLOUDINARY_CLOUD_NAME,
@@ -119,6 +127,93 @@ const Profile = () => {
     }
   };
 
+  const fetchUserPapers = async () => {
+    if (!user?.id) return;
+    setLoadingPapers(true);
+    try {
+      // Fetch saved papers
+      const savedResponse = await fetch(`/(api)/user/${user.id}/saves`);
+      const savedResult = await savedResponse.json();
+      if (savedResponse.ok) {
+        setSavedPapers(savedResult.data);
+      }
+
+      // Fetch liked papers
+      const likedResponse = await fetch(`/(api)/user/${user.id}/likes`);
+      const likedResult = await likedResponse.json();
+      if (likedResponse.ok) {
+        setLikedPapers(likedResult.data);
+      }
+    } catch (error) {
+      console.error("Error fetching user papers:", error);
+    } finally {
+      setLoadingPapers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserPapers();
+    }
+  }, [user?.id]);
+
+  const renderPaperCard = ({ item }: { item: any }) => {
+    const publishedDate = item.published
+      ? new Date(item.published).toLocaleDateString()
+      : "Unknown date";
+
+    const authors = Array.isArray(item.authors)
+      ? item.authors.join(", ")
+      : item.authors;
+
+    const summaryPreview =
+      item.summary && item.summary.length > 200
+        ? item.summary.slice(0, 200) + "…"
+        : item.summary;
+
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedPaper(item);
+          setIsModalVisible(true);
+        }}
+        className="bg-white rounded-2xl p-4 mb-4 shadow-md"
+      >
+        <Text className="text-lg font-JakartaBold text-gray-900 mb-1">
+          {item.title}
+        </Text>
+
+        <View className="flex-row items-center mb-2">
+          <View className="bg-blue-200 px-2 py-1 rounded-full mr-2">
+            <Text className="text-xs text-blue-800">{item.category}</Text>
+          </View>
+          <Text className="text-xs text-gray-600">{publishedDate}</Text>
+        </View>
+
+        <Text className="text-sm text-gray-700 mb-2">
+          {authors || "Unknown authors"}
+        </Text>
+
+        {summaryPreview ? (
+          <Text className="text-sm text-gray-800 mb-2">{summaryPreview}</Text>
+        ) : null}
+
+        {Array.isArray(item.keywords) && item.keywords.length > 0 ? (
+          <View className="flex-wrap flex-row">
+            {item.keywords.map((kw: string, idx: number) => (
+              <View
+                key={idx}
+                className="bg-gray-200 px-2 py-0.5 rounded-xl mr-2 mb-2"
+              >
+                <Text className="text-xs text-gray-700">{kw}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-general-500">
       <ScrollView className="flex-1">
@@ -190,9 +285,86 @@ const Profile = () => {
                 )}
               </View>
             </View>
+
+            {/* Saved and Liked Papers */}
+            <View className="bg-white rounded-2xl p-4 shadow-sm mb-4">
+              <Text className="text-lg font-JakartaBold text-gray-900 mb-4">My Papers</Text>
+              
+              {/* Tab Buttons */}
+              <View className="flex-row mb-4">
+                <TouchableOpacity
+                  onPress={() => setActiveTab('saved')}
+                  className={`flex-1 mr-2 py-2 rounded-full ${
+                    activeTab === 'saved' ? 'bg-blue-500' : 'bg-gray-200'
+                  }`}
+                >
+                  <Text
+                    className={`text-center ${
+                      activeTab === 'saved' ? 'text-white' : 'text-gray-700'
+                    }`}
+                  >
+                    Saved
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setActiveTab('liked')}
+                  className={`flex-1 ml-2 py-2 rounded-full ${
+                    activeTab === 'liked' ? 'bg-blue-500' : 'bg-gray-200'
+                  }`}
+                >
+                  <Text
+                    className={`text-center ${
+                      activeTab === 'liked' ? 'text-white' : 'text-gray-700'
+                    }`}
+                  >
+                    Liked
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Papers List */}
+              {loadingPapers ? (
+                <View className="py-4">
+                  <ActivityIndicator size="large" color="#0000ff" />
+                </View>
+              ) : (
+                <View>
+                  {activeTab === 'saved' ? (
+                    savedPapers.length > 0 ? (
+                      savedPapers.map((paper, index) => (
+                        <View key={paper.paper_id || index}>
+                          {renderPaperCard({ item: paper })}
+                        </View>
+                      ))
+                    ) : (
+                      <Text className="text-gray-500 text-center py-4">No saved papers yet</Text>
+                    )
+                  ) : (
+                    likedPapers.length > 0 ? (
+                      likedPapers.map((paper, index) => (
+                        <View key={paper.paper_id || index}>
+                          {renderPaperCard({ item: paper })}
+                        </View>
+                      ))
+                    ) : (
+                      <Text className="text-gray-500 text-center py-4">No liked papers yet</Text>
+                    )
+                  )}
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
+
+      <PaperDetailModal
+        paper={selectedPaper}
+        visible={isModalVisible}
+        onClose={() => {
+          setIsModalVisible(false);
+          setSelectedPaper(null);
+        }}
+      />
     </SafeAreaView>
   );
 };

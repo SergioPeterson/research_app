@@ -14,3 +14,4 @@ export const getLocalPool = () =>
 
 export const getNeonClient = () => neon(process.env.DATABASE_URL!);
 export const dbIsLocal = isLocal;
+// console.log("isLocal", isLocal);
