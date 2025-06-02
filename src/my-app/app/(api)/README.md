@@ -38,7 +38,6 @@
 | profile_image_url | TEXT | Image file to a storage service |
 
 
-
 #### user_likes
 | Column | Type | Description |
 |--------|------|-------------|

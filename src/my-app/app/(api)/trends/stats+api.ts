@@ -4,7 +4,7 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const period = searchParams.get('period') || 'week';
-        
+        console.log(`Called : /trends/stats?period=${period}+api.ts GET`);
         // Get all papers
         const allPapers = await papers();
         

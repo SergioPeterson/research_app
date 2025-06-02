@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     try {
         const url = new URL(request.url);
         const clerkId = url.pathname.split('/').pop();
-        
+        console.log(`Called : /user/${clerkId}+api.ts GET`);
         if (!clerkId) {
             return Response.json({ error: "User ID is required" }, { status: 400 });
         }
@@ -34,6 +34,7 @@ export async function PATCH(request: Request) {
     try {
       const url = new URL(request.url);
       const clerkId = url.pathname.split("/").pop();
+      console.log(`Called : /user/${clerkId}+api.ts PATCH`);
       if (!clerkId) {
         return Response.json({ error: "User ID is required" }, { status: 400 });
       }
@@ -64,6 +65,7 @@ export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url);
     const clerkId = url.pathname.split("/").pop();
+    console.log(`Called : /user/${clerkId}+api.ts DELETE`);
     if (!clerkId) {
       return Response.json({ error: "User ID is required" }, { status: 400 });
     }

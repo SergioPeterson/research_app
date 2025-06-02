@@ -9,6 +9,7 @@ import "dotenv/config";
  */
 export async function POST(request: Request) {
   try {
+    console.log(`Called : /user+api.ts POST`);
     const { clerkId, name, email } = await request.json();
 
     if (!name || !email || !clerkId) {

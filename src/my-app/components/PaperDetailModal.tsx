@@ -35,14 +35,13 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
   const fetchLikeAndSaveCounts = async () => {
     try {
       // Fetch total likes for the paper
-      const likesResponse = await fetch(`/(api)/paper/${paper.paper_id}/likes`);
+      const likesResponse = await fetch(`/(api)/paper/likes?paperId=${paper.paper_id}`);
       const likesData = await likesResponse.json();
-      setLikeCount(likesData?.count || 0);
+      setLikeCount(likesData?.data?.length || 0);
 
-      // Fetch total saves for the paper
-      const savesResponse = await fetch(`/(api)/paper/${paper.paper_id}/saves`);
+      const savesResponse = await fetch(`/(api)/paper/saves?paperId=${paper.paper_id}`);
       const savesData = await savesResponse.json();
-      setSaveCount(savesData?.count || 0);
+      setSaveCount(savesData?.data?.length || 0);
     } catch (error) {
       console.error('Error fetching counts:', error);
     }

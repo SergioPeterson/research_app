@@ -46,19 +46,20 @@ const Home = () => {
     try {
       // First fetch specific papers
       const paper1 = await fetch(`/(api)/paper/2505.22947v1`);
-      const paper2 = await fetch(`/(api)/paper/2505.22950v1`);
+      // const paper2 = await fetch(`/(api)/paper/2505.22950v1`);
       
       const result1 = await paper1.json();
-      const result2 = await paper2.json();
-      // Then fetch all papers
-      const response = await fetch(`/(api)/paper`);
+      // const result2 = await paper2.json();
+
+      // Then fetch recommended papers
+      const response = await fetch(`/(api)/recommendation/${user?.id}`);
       const result = await response.json();
       
       if (response.ok) {
         // Combine specific papers with the rest
         const combinedPapers = [
           result1.data,
-          result2.data,
+          // result2.data,
           ...result.data
         ];
         setPapers(combinedPapers);
@@ -78,9 +79,9 @@ const Home = () => {
   }, []);
 
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  const handleSearch = async (query: string) => {
     setIsSearching(true);
+    setSearchQuery(query);
 
     if (!query.trim()) {
       setFilteredPapers(papers);
@@ -88,26 +89,38 @@ const Home = () => {
       return;
     }
 
-    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-    
-    const filtered = papers.filter(paper => {
-      const titleMatch = paper.title?.toLowerCase().includes(query.toLowerCase());
-      const authorsMatch = Array.isArray(paper.authors) 
-        ? paper.authors.some((author: string) => author.toLowerCase().includes(query.toLowerCase()))
-        : paper.authors?.toLowerCase().includes(query.toLowerCase());
-      const keywordsMatch = Array.isArray(paper.keywords)
-        ? paper.keywords.some((keyword: string) => keyword.toLowerCase().includes(query.toLowerCase()))
-        : false;
-      const organizationsMatch = Array.isArray(paper.organizations)
-        ? paper.organizations.some((org: string) => org.toLowerCase().includes(query.toLowerCase()))
-        : false;
-      const categoryMatch = paper.category?.toLowerCase().includes(query.toLowerCase());
-
-      return titleMatch || authorsMatch || keywordsMatch || organizationsMatch || categoryMatch;
+    // First search locally in the papers we already have
+    const localResults = papers.filter(paper => {
+      const searchableText = [
+        paper.title,
+        paper.authors,
+        paper.categories,
+        paper.keywords?.join(' '),
+        paper.organizations?.join(' ')
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      return searchableText.includes(query.toLowerCase());
     });
 
-    setFilteredPapers(filtered);
-    setIsSearching(false);
+    // If we have enough local results (more than 5), use those
+    if (localResults.length >= 5) {
+      setFilteredPapers(localResults);
+      setIsSearching(false);
+      return;
+    }
+
+    // If we don't have enough local results, make an API call
+    try {
+      const response = await fetch(`/(api)/paper/search?query=${query}`);
+      const result = await response.json();
+      setFilteredPapers(result.data);
+    } catch (error) {
+      console.error("Error searching papers:", error);
+      // Fallback to local results if API call fails
+      setFilteredPapers(localResults);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const renderPaperCard = ({ item }: { item: any }) => {
@@ -219,7 +232,7 @@ const Home = () => {
                   className="flex-1 text-base"
                   placeholder="Search papers by title, authors, keywords..."
                   value={searchQuery}
-                  onChangeText={handleSearch}
+                  onChangeText={(text) => handleSearch(text)}
                   placeholderTextColor="#666"
                 />
                 {searchQuery.length > 0 && (

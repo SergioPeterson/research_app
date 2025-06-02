@@ -59,14 +59,12 @@ const Profile = () => {
 
   const pickImageAndUpload = async () => {
     try {
-      // 1) Ask for permissions
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permission.status !== "granted") {
         Alert.alert("Permission required", "We need permission to access your photos.");
         return;
       }
 
-      // 2) Launch image picker
       const pickerResult = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.7,
@@ -78,7 +76,6 @@ const Profile = () => {
       setUploading(true);
       const localUri = pickerResult.assets[0].uri;
 
-      // 3) Build FormData using RN conventions:
       const formData = new FormData();
       formData.append("file", {
         uri: localUri,
@@ -87,7 +84,6 @@ const Profile = () => {
       } as any);
       formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-      // 4) POST to Cloudinary
       const cloudRes = await fetch(CLOUDINARY_UPLOAD_URL, {
         method: "POST",
         body: formData,
@@ -100,7 +96,6 @@ const Profile = () => {
         return;
       }
 
-      // 5) Update user profile in database
       if (user?.id) {
         const updateResponse = await fetch(`/(api)/user/${user.id}`, {
           method: "PATCH",
@@ -115,7 +110,6 @@ const Profile = () => {
         if (!updateResponse.ok) {
           throw new Error("Failed to update profile in database");
         }
-        // Update local state with new data
         const updatedUserData = await updateResponse.json();
         setUserData(updatedUserData.data);
       }
@@ -131,18 +125,32 @@ const Profile = () => {
     if (!user?.id) return;
     setLoadingPapers(true);
     try {
-      // Fetch saved papers
       const savedResponse = await fetch(`/(api)/user/${user.id}/saves`);
       const savedResult = await savedResponse.json();
       if (savedResponse.ok) {
-        setSavedPapers(savedResult.data);
+        // Fetch paper details for each saved paper
+        const savedPapersWithDetails = await Promise.all(
+          savedResult.data.map(async (paper: any) => {
+            const paperResponse = await fetch(`/(api)/paper/${paper.paper_id}`);
+            const paperData = await paperResponse.json();
+            return { ...paper, paperDetails: paperData.data };
+          })
+        );
+        setSavedPapers(savedPapersWithDetails);
       }
 
-      // Fetch liked papers
       const likedResponse = await fetch(`/(api)/user/${user.id}/likes`);
       const likedResult = await likedResponse.json();
       if (likedResponse.ok) {
-        setLikedPapers(likedResult.data);
+        // Fetch paper details for each liked paper
+        const likedPapersWithDetails = await Promise.all(
+          likedResult.data.map(async (paper: any) => {
+            const paperResponse = await fetch(`/(api)/paper/${paper.paper_id}`);
+            const paperData = await paperResponse.json();
+            return { ...paper, paperDetails: paperData.data };
+          })
+        );
+        setLikedPapers(likedPapersWithDetails);
       }
     } catch (error) {
       console.error("Error fetching user papers:", error);
@@ -158,58 +166,20 @@ const Profile = () => {
   }, [user?.id]);
 
   const renderPaperCard = ({ item }: { item: any }) => {
-    const publishedDate = item.published
-      ? new Date(item.published).toLocaleDateString()
-      : "Unknown date";
-
-    const authors = Array.isArray(item.authors)
-      ? item.authors.join(", ")
-      : item.authors;
-
-    const summaryPreview =
-      item.summary && item.summary.length > 200
-        ? item.summary.slice(0, 200) + "…"
-        : item.summary;
-
     return (
       <TouchableOpacity
         onPress={() => {
-          setSelectedPaper(item);
+          setSelectedPaper(item.paperDetails);
           setIsModalVisible(true);
         }}
-        className="bg-white rounded-2xl p-4 mb-4 shadow-md"
+        className="bg-white p-4 rounded-lg mb-2 shadow-sm"
       >
-        <Text className="text-lg font-JakartaBold text-gray-900 mb-1">
-          {item.title}
+        <Text className="text-lg font-JakartaBold text-gray-900">
+          {item.paperDetails?.title || 'Untitled Paper'}
         </Text>
-
-        <View className="flex-row items-center mb-2">
-          <View className="bg-blue-200 px-2 py-1 rounded-full mr-2">
-            <Text className="text-xs text-blue-800">{item.category}</Text>
-          </View>
-          <Text className="text-xs text-gray-600">{publishedDate}</Text>
-        </View>
-
-        <Text className="text-sm text-gray-700 mb-2">
-          {authors || "Unknown authors"}
+        <Text className="text-gray-600 mt-1">
+          {item.paperDetails?.authors?.join(', ') || 'No authors'}
         </Text>
-
-        {summaryPreview ? (
-          <Text className="text-sm text-gray-800 mb-2">{summaryPreview}</Text>
-        ) : null}
-
-        {Array.isArray(item.keywords) && item.keywords.length > 0 ? (
-          <View className="flex-wrap flex-row">
-            {item.keywords.map((kw: string, idx: number) => (
-              <View
-                key={idx}
-                className="bg-gray-200 px-2 py-0.5 rounded-xl mr-2 mb-2"
-              >
-                <Text className="text-xs text-gray-700">{kw}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
       </TouchableOpacity>
     );
   };

@@ -40,6 +40,7 @@ const Trends = () => {
       // Fetch top papers
       const topResponse = await fetch(`/(api)/trends/top?period=${selectedPeriod}`);
       const topResult = await topResponse.json();
+      // console.log("topResult", topResult);
       if (topResponse.ok) {
         setTopPapers(topResult.data);
       }
@@ -47,6 +48,7 @@ const Trends = () => {
       // Fetch hot papers
       const hotResponse = await fetch(`/(api)/trends/hot?period=${selectedPeriod}`);
       const hotResult = await hotResponse.json();
+      // console.log("hotResult", hotResult);
       if (hotResponse.ok) {
         setHotPapers(hotResult.data);
       }
@@ -259,9 +261,9 @@ const Trends = () => {
       ) : (
         <FlatList
           data={[
-            { title: "Most Liked", data: topPapers },
-            { title: "Trending Now", data: hotPapers },
-            { title: "Latest Papers", data: newestPapers },
+            { title: "Top Papers", data: topPapers },
+            { title: "Hot Papers", data: hotPapers },
+            { title: "Newest Papers", data: newestPapers },
           ]}
           keyExtractor={(item) => item.title}
           renderItem={({ item }) => renderSection(item.title, item.data)}
