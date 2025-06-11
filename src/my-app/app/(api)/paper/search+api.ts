@@ -12,6 +12,7 @@ export async function GET(request: Request) {
     if (!query) {
         return Response.json({ error: "Query is required" }, { status: 400 });
     }
-    const papers = await searchPapers(query);
-    return Response.json({ data: papers }, { status: 200 });
+    console.log(query);
+    // const papers = await searchPapers(query);
+    // return Response.json({ data: papers }, { status: 200 });
 }

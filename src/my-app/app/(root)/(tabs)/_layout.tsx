@@ -1,6 +1,6 @@
 import { icons } from "@/constants";
 import { Tabs } from "expo-router";
-import React from "react";
+import * as React from "react";
 import { Image, ImageSourcePropType, View } from "react-native";
 
 const TabIcon = ({ focused, source }: { focused: boolean, source: ImageSourcePropType }) => (
@@ -50,6 +50,13 @@ const Layout = () => (
             title: "Trends",
             headerShown: false,
             tabBarIcon: ( {focused} ) => <TabIcon focused={focused} source={icons.list}/>,
+        }} />
+        <Tabs.Screen 
+        name="following" 
+        options={{ 
+            title: "Following",
+            headerShown: false,
+            tabBarIcon: ( {focused} ) => <TabIcon focused={focused} source={icons.person}/>,
         }} />
         <Tabs.Screen 
         name="profile" 

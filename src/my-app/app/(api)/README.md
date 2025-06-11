@@ -16,7 +16,7 @@
 | category | string | Paper category |
 | link | string | URL to paper |
 
-#### paper_inference
+#### paper_inference - only for some papers, not all papers have infrence
 | Column | Type | Description |
 |--------|------|-------------|
 | paper_id | string | ArXiv paper PRIMARY KEY |
@@ -50,13 +50,24 @@
 | user_id | string | Foreign key to users |
 | paper_id | id | Foreign key to arxiv_papers |
 
-#### recommendations
+#### user_follow_authors
 | Column | Type | Description |
 |--------|------|-------------|
-| id | integer | Primary key |
 | user_id | string | Foreign key to users |
-| paper_ids | string[] | Foreign key to arxiv_papers |
-| updated_at | timestamp | Last update timestamp |
+| author | string | Author name to follow |
+
+#### user_follow_categories
+| Column | Type | Description |
+|--------|------|-------------|
+| user_id | string | Foreign key to users |
+| category | string | Category to follow |
+
+#### user_follow_organizations
+| Column | Type | Description |
+|--------|------|-------------|
+| user_id | string | Foreign key to users |
+| organization | string | Organization to follow |
+
 
 ## API Endpoints
 

@@ -45,12 +45,9 @@ const Home = () => {
   const fetchPapers = async () => {
     try {
       // First fetch specific papers
-      const paper1 = await fetch(`/(api)/paper/2505.22947v1`);
-      // const paper2 = await fetch(`/(api)/paper/2505.22950v1`);
-      
-      const result1 = await paper1.json();
-      // const result2 = await paper2.json();
-
+      // const paper1 = await fetch(`/(api)/paper/2505.22947v1`);
+      // const result1 = await paper1.json();
+          
       // Then fetch recommended papers
       const response = await fetch(`/(api)/recommendation/${user?.id}`);
       const result = await response.json();
@@ -58,8 +55,6 @@ const Home = () => {
       if (response.ok) {
         // Combine specific papers with the rest
         const combinedPapers = [
-          result1.data,
-          // result2.data,
           ...result.data
         ];
         setPapers(combinedPapers);

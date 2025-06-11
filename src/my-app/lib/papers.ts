@@ -70,6 +70,44 @@ export async function searchPapers(query: string) {
         return res;
     }
 }
+
+/**
+ * This function is used to search for papers by author, organization and category
+ * @param author - The author name
+ * @param organization - The organization name
+ * @param category - The category name
+ * @returns The papers object
+ */
+export async function deepSearchPapers(author: string, organization: string, category: string) {
+    if (dbIsLocal) {
+        const pool = getLocalPool();
+        const res = await pool.query(`
+            SELECT a.*, 
+                   i.summary, 
+                   i.keywords, 
+                   i.organizations
+            FROM arxiv_papers a
+            LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
+            WHERE a.author = $1 OR a.organization = $2 OR a.category = $3
+            LIMIT 10
+        `, [author, organization, category]);
+        return res.rows;
+    } else {
+        const sql = getNeonClient();
+        const res = await sql`
+            SELECT a.*, 
+                   i.summary, 
+                   i.keywords,  
+                   i.organizations
+            FROM arxiv_papers a
+            LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
+            WHERE a.author = ${author} OR a.organization = ${organization} OR a.category = ${category}
+            LIMIT 10
+        `;
+        return res;
+    }
+}
+
 /**
  * This function is used to get all papers
  * @returns The papers object

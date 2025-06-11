@@ -1,6 +1,7 @@
 import PaperDetailModal from "@/components/PaperDetailModal";
 import { useUser } from "@clerk/clerk-expo";
-import React, { useEffect, useState } from "react";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -38,27 +39,28 @@ const Trends = () => {
     setLoading(true);
     try {
       // Fetch top papers
-      const topResponse = await fetch(`/(api)/trends/top?period=${selectedPeriod}`);
-      const topResult = await topResponse.json();
+      // const topResponse = await fetch(`/(api)/trends/top?period=${selectedPeriod}`);
+      // const topResult = await topResponse.json();
       // console.log("topResult", topResult);
-      if (topResponse.ok) {
-        setTopPapers(topResult.data);
-      }
+      // if (topResponse.ok) {
+      //   setTopPapers(topResult.data);
+      // }
 
-      // Fetch hot papers
-      const hotResponse = await fetch(`/(api)/trends/hot?period=${selectedPeriod}`);
-      const hotResult = await hotResponse.json();
+      // // Fetch hot papers
+      // const hotResponse = await fetch(`/(api)/trends/hot?period=${selectedPeriod}`);
+      // const hotResult = await hotResponse.json();
       // console.log("hotResult", hotResult);
-      if (hotResponse.ok) {
-        setHotPapers(hotResult.data);
-      }
+      // if (hotResponse.ok) {
+      //   setHotPapers(hotResult.data);
+      // }
 
-      // Fetch newest papers
-      const newestResponse = await fetch(`/(api)/trends/new`);
-      const newestResult = await newestResponse.json();
-      if (newestResponse.ok) {
-        setNewestPapers(newestResult.data);
-      }
+      // // Fetch newest papers
+      // const newestResponse = await fetch(`/(api)/trends/new`);
+      // const newestResult = await newestResponse.json();
+      // console.log("newestResult", newestResult);
+      // if (newestResponse.ok) {
+      //   setNewestPapers(newestResult.data);
+      // }
     } catch (error) {
       console.error("Error fetching trends:", error);
     } finally {
@@ -68,11 +70,11 @@ const Trends = () => {
 
   const fetchTrendData = async () => {
     try {
-      const response = await fetch(`/(api)/trends/stats?period=${selectedPeriod}`);
-      const result = await response.json();
-      if (response.ok) {
-        setTrendData(result.data);
-      }
+      // const response = await fetch(`/(api)/trends/stats?period=${selectedPeriod}`);
+      // const result = await response.json();
+      // if (response.ok) {
+      //   setTrendData(result.data);
+      // }
     } catch (error) {
       console.error("Error fetching trend data:", error);
     }

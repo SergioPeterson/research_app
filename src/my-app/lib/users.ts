@@ -226,3 +226,163 @@ export async function getSavePaper(clerkId: string) {
     return res;
   }
 }
+
+
+/**
+ * This function is used to get all followed authors by their clerk id
+ * @param clerkId - The clerk id of the user
+ * @returns The followed authors object
+ */
+export async function getFollowedAuthors(clerkId: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("SELECT * FROM user_follow_authors WHERE user_id = $1", [clerkId]);
+    return res.rows;
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`SELECT * FROM user_follow_authors WHERE user_id = ${clerkId}`;
+    return res;
+  }
+}
+
+/**
+ * This function is used to add a followed author by their clerk id and author name
+ * @param clerkId - The clerk id of the user
+ * @param author - The author name to follow
+ * @returns The followed author object
+ */
+export async function addFollowAuthor(clerkId: string, author: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("INSERT INTO user_follow_authors (user_id, author) VALUES ($1, $2)", [clerkId, author]);
+    return res.rows[0];
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`INSERT INTO user_follow_authors (user_id, author) VALUES (${clerkId}, ${author})`;
+    return res[0];
+  }
+}
+
+/**
+ * This function is used to remove a followed author by their clerk id and author name
+ * @param clerkId - The clerk id of the user
+ * @param author - The author name to unfollow
+ * @returns The followed author object
+ */
+export async function removeFollowAuthor(clerkId: string, author: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("DELETE FROM user_follow_authors WHERE user_id = $1 AND author = $2", [clerkId, author]);
+    return res.rows[0];
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`DELETE FROM user_follow_authors WHERE user_id = ${clerkId} AND author = ${author}`;
+    return res[0];
+  }
+}
+
+/**
+ * This function is used to get all followed categories by their clerk id
+ * @param clerkId - The clerk id of the user
+ * @returns The followed categories object
+ */
+export async function getFollowedCategories(clerkId: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("SELECT * FROM user_follow_categories WHERE user_id = $1", [clerkId]);
+    return res.rows;
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`SELECT * FROM user_follow_categories WHERE user_id = ${clerkId}`;
+    return res;
+  }
+}
+
+/**
+ * This function is used to add a followed category by their clerk id and category name
+ * @param clerkId - The clerk id of the user
+ * @param category - The category name to follow
+ * @returns The followed category object
+ */
+export async function addFollowCategory(clerkId: string, category: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("INSERT INTO user_follow_categories (user_id, category) VALUES ($1, $2)", [clerkId, category]);
+    return res.rows[0];
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`INSERT INTO user_follow_categories (user_id, category) VALUES (${clerkId}, ${category})`;
+    return res[0];
+  }
+}
+
+/**
+ * This function is used to remove a followed category by their clerk id and category name
+ * @param clerkId - The clerk id of the user
+ * @param category - The category name to unfollow
+ * @returns The followed category object
+ */
+export async function removeFollowCategory(clerkId: string, category: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("DELETE FROM user_follow_categories WHERE user_id = $1 AND category = $2", [clerkId, category]);
+    return res.rows[0];
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`DELETE FROM user_follow_categories WHERE user_id = ${clerkId} AND category = ${category}`;
+    return res[0];
+  }
+}
+
+/**
+ * This function is used to get all followed organizations by their clerk id
+ * @param clerkId - The clerk id of the user
+ * @returns The followed organizations object
+ */
+export async function getFollowedOrganizations(clerkId: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("SELECT * FROM user_follow_organizations WHERE user_id = $1", [clerkId]);
+    return res.rows;
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`SELECT * FROM user_follow_organizations WHERE user_id = ${clerkId}`;
+    return res;
+  }
+}
+
+/**
+ * This function is used to add a followed organization by their clerk id and organization name
+ * @param clerkId - The clerk id of the user
+ * @param organization - The organization name to follow
+ * @returns The followed organization object
+ */
+export async function addFollowOrganization(clerkId: string, organization: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("INSERT INTO user_follow_organizations (user_id, organization) VALUES ($1, $2)", [clerkId, organization]);
+    return res.rows[0];
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`INSERT INTO user_follow_organizations (user_id, organization) VALUES (${clerkId}, ${organization})`;
+    return res[0];
+  }
+}
+
+/**
+ * This function is used to remove a followed organization by their clerk id and organization name
+ * @param clerkId - The clerk id of the user
+ * @param organization - The organization name to unfollow
+ * @returns The followed organization object
+ */
+export async function removeFollowOrganization(clerkId: string, organization: string) {
+  if (dbIsLocal) {
+    const pool = getLocalPool();
+    const res = await pool.query("DELETE FROM user_follow_organizations WHERE user_id = $1 AND organization = $2", [clerkId, organization]);
+    return res.rows[0];
+  } else {
+    const sql = getNeonClient();
+    const res = await sql`DELETE FROM user_follow_organizations WHERE user_id = ${clerkId} AND organization = ${organization}`;
+    return res[0];
+  }
+}
