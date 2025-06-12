@@ -41,6 +41,22 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
     }
   }, [user?.id, paper?.paper_id]);
 
+  useEffect(() => {
+    return () => {
+      setShowCategoryModal(false);
+      setShowAuthorModal(false);
+      setSelectedAuthor('');
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      setShowCategoryModal(false);
+      setShowAuthorModal(false);
+      setSelectedAuthor('');
+    }
+  }, [visible]);
+
   const fetchLikeAndSaveCounts = async () => {
     try {
       // Fetch total likes for the paper
@@ -170,7 +186,10 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
       
       <AuthorModal
         visible={showAuthorModal}
-        onClose={() => setShowAuthorModal(false)}
+        onClose={() => {
+          setShowAuthorModal(false);
+          onClose();
+        }}
         author={selectedAuthor}
       />
 

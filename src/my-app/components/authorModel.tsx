@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import OrganizationModal from './organizationModel';
 
 interface AuthorModalProps {
   visible: boolean;
@@ -24,7 +25,25 @@ const AuthorModal = ({
   onClose,
   author,
 }: AuthorModalProps) => {
-  // console.log('AuthorModal props:', { visible, author }); // Debug log
+  const [showOrgModal, setShowOrgModal] = React.useState(false);
+  const [selectedOrg, setSelectedOrg] = React.useState('');
+
+  // Add cleanup effect
+  React.useEffect(() => {
+    return () => {
+      // Cleanup when component unmounts
+      setShowOrgModal(false);
+      setSelectedOrg('');
+    };
+  }, []);
+
+  // Add effect to handle modal visibility
+  React.useEffect(() => {
+    if (!visible) {
+      setShowOrgModal(false);
+      setSelectedOrg('');
+    }
+  }, [visible]);
 
   // Placeholder data - will be replaced with API data later
   const authorData = {
@@ -51,81 +70,100 @@ const AuthorModal = ({
     ]
   };
 
-  if (!visible) {
-    // console.log('AuthorModal not visible, returning null'); // Debug log
-    return null;
-  }
+  const handleOrgPress = (org: string) => {
+    setSelectedOrg(org);
+    setShowOrgModal(true);
+  };
 
-  // console.log('AuthorModal rendering with data:', authorData); // Debug log
+  if (!visible) return null;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <View style={[styles.overlay]}>
-        <View style={[styles.modalContainer]}>
-          <ScrollView style={styles.scrollView}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.authorName}>{authorData.name}</Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Icon name="times" size={24} color="#4b5563" />
-              </TouchableOpacity>
-            </View>
+    <>
+      <OrganizationModal
+        visible={showOrgModal}
+        onClose={() => {
+          setShowOrgModal(false);
+          onClose();
+        }}
+        organization={selectedOrg}
+      />
 
-            {/* Organizations */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Organizations</Text>
-              <View style={styles.tagContainer}>
-                {authorData.organizations.map((org, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{org}</Text>
-                  </View>
-                ))}
+      <Modal
+        visible={visible && !showOrgModal}
+        transparent
+        animationType="fade"
+        onRequestClose={onClose}
+        statusBarTranslucent
+      >
+        <View style={styles.overlay}>
+          <View style={styles.modalContainer}>
+            <ScrollView style={styles.scrollView}>
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.authorName}>{authorData.name}</Text>
+                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                  <Icon name="times" size={24} color="#4b5563" />
+                </TouchableOpacity>
               </View>
-            </View>
 
-            {/* Labs */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Research Labs</Text>
-              <View style={styles.tagContainer}>
-                {authorData.labs.map((lab, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{lab}</Text>
-                  </View>
-                ))}
+              {/* Organizations */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Organizations</Text>
+                <View style={styles.tagContainer}>
+                  {authorData.organizations.map((org, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.tag}
+                      onPress={() => handleOrgPress(org)}
+                    >
+                      <Text style={styles.tagText}>{org}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
-            </View>
 
-            {/* Bio */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Biography</Text>
-              <Text style={styles.bioText}>{authorData.bio}</Text>
-            </View>
+              {/* Labs */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Research Labs</Text>
+                <View style={styles.tagContainer}>
+                  {authorData.labs.map((lab, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.tag}
+                      onPress={() => handleOrgPress(lab)}
+                    >
+                      <Text style={styles.tagText}>{lab}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
 
-            {/* Recent Papers */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Recent Papers</Text>
-              {authorData.recentPapers.map((paper, index) => (
-                <View key={index} style={styles.paperItem}>
-                  <Text style={styles.paperTitle}>{paper.title}</Text>
-                  <View style={styles.paperMeta}>
-                    <Text style={styles.paperYear}>{paper.year}</Text>
-                    <View style={styles.categoryTag}>
-                      <Text style={styles.categoryText}>{paper.category}</Text>
+              {/* Bio */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Biography</Text>
+                <Text style={styles.bioText}>{authorData.bio}</Text>
+              </View>
+
+              {/* Recent Papers */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Recent Papers</Text>
+                {authorData.recentPapers.map((paper, index) => (
+                  <View key={index} style={styles.paperItem}>
+                    <Text style={styles.paperTitle}>{paper.title}</Text>
+                    <View style={styles.paperMeta}>
+                      <Text style={styles.paperYear}>{paper.year}</Text>
+                      <View style={styles.categoryTag}>
+                        <Text style={styles.categoryText}>{paper.category}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </>
   );
 };
 

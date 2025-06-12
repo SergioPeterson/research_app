@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     if (!query) {
         return Response.json({ error: "Query is required" }, { status: 400 });
     }
-    console.log(query);
+    // Fix agsint SQL injections
     // const papers = await searchPapers(query);
     // return Response.json({ data: papers }, { status: 200 });
 }
