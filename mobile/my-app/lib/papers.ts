@@ -8,7 +8,6 @@ import { dbIsLocal, getLocalPool, getNeonClient } from "./db";
 export async function getPaper(paperId: string) {
     if (dbIsLocal) {
         const pool = getLocalPool();
-        // console.log("paperId in getPaper:", paperId);
         const res = await pool.query(`
             SELECT a.*, 
                    i.summary, 
@@ -17,8 +16,8 @@ export async function getPaper(paperId: string) {
             FROM arxiv_papers a
             LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
             WHERE a.paper_id = $1
+            LIMIT 1
         `, [paperId]);
-        // console.log("res in getPaper:", res.rows);
         return res.rows[0];
     } else {
         const sql = getNeonClient();
@@ -30,6 +29,7 @@ export async function getPaper(paperId: string) {
             FROM arxiv_papers a
             LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
             WHERE a.paper_id = ${paperId}
+            LIMIT 1
         `;
         return res[0];
     }
@@ -52,7 +52,8 @@ export async function searchPapers(query: string) {
             FROM arxiv_papers a
             LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
             WHERE a.title ILIKE $1
-            LIMIT 3;
+            ORDER BY a.id DESC
+            LIMIT 3
         `, [queryString]);
         return res.rows;
     } else {
@@ -64,8 +65,9 @@ export async function searchPapers(query: string) {
                    i.organizations
             FROM arxiv_papers a
             LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
-            WHERE a.title ILIKE $1
-            LIMIT 3;
+            WHERE a.title ILIKE ${`%${query}%`}
+            ORDER BY a.id DESC
+            LIMIT 3
         `;
         return res;
     }
@@ -88,9 +90,10 @@ export async function deepSearchPapers(author: string, organization: string, cat
                    i.organizations
             FROM arxiv_papers a
             LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
-            WHERE a.author = $1 OR a.organization = $2 OR a.category = $3
+            WHERE (a.author ILIKE $1 OR a.organization ILIKE $2 OR a.category ILIKE $3)
+            ORDER BY a.id DESC
             LIMIT 10
-        `, [author, organization, category]);
+        `, [`%${author}%`, `%${organization}%`, `%${category}%`]);
         return res.rows;
     } else {
         const sql = getNeonClient();
@@ -101,7 +104,8 @@ export async function deepSearchPapers(author: string, organization: string, cat
                    i.organizations
             FROM arxiv_papers a
             LEFT JOIN paper_inference i ON a.paper_id = i.paper_id
-            WHERE a.author = ${author} OR a.organization = ${organization} OR a.category = ${category}
+            WHERE (a.author ILIKE ${`%${author}%`} OR a.organization ILIKE ${`%${organization}%`} OR a.category ILIKE ${`%${category}%`})
+            ORDER BY a.id DESC
             LIMIT 10
         `;
         return res;
@@ -143,8 +147,8 @@ export async function papers() {
 }
 
 /**
- * This function is used to get all papers liked by a user by their clerk id
- * @param clerkId - The clerk id of the user
+ * This function is used to get all papers liked by a user
+ * @param paperId - The paper id
  * @returns The papers object
  */
 export async function likedBy(paperId: string) {
@@ -153,8 +157,9 @@ export async function likedBy(paperId: string) {
         const res = await pool.query(`
             SELECT a.*
             FROM arxiv_papers a
-            LEFT JOIN user_likes l ON a.paper_id = l.paper_id
+            INNER JOIN user_likes l ON a.paper_id = l.paper_id
             WHERE l.paper_id = $1
+            ORDER BY l.created_at DESC
         `, [paperId]);
         return res.rows;
     } else {
@@ -162,16 +167,17 @@ export async function likedBy(paperId: string) {
         const res = await sql`
             SELECT a.*
             FROM arxiv_papers a
-            LEFT JOIN user_likes l ON a.paper_id = l.paper_id
+            INNER JOIN user_likes l ON a.paper_id = l.paper_id
             WHERE l.paper_id = ${paperId}
+            ORDER BY l.created_at DESC
         `;
         return res;
     }
 }
 
 /**
- * This function is used to get all papers saved by a user by their clerk id
- * @param clerkId - The clerk id of the user
+ * This function is used to get all papers saved by a user
+ * @param paperId - The paper id
  * @returns The papers object
  */
 export async function savedBy(paperId: string) {
@@ -180,8 +186,9 @@ export async function savedBy(paperId: string) {
         const res = await pool.query(`
             SELECT a.*
             FROM arxiv_papers a
-            LEFT JOIN user_saves s ON a.paper_id = s.paper_id
+            INNER JOIN user_saves s ON a.paper_id = s.paper_id
             WHERE s.paper_id = $1
+            ORDER BY s.created_at DESC
         `, [paperId]);
         return res.rows;
     } else {
@@ -189,8 +196,9 @@ export async function savedBy(paperId: string) {
         const res = await sql`
             SELECT a.*
             FROM arxiv_papers a
-            LEFT JOIN user_saves s ON a.paper_id = s.paper_id
+            INNER JOIN user_saves s ON a.paper_id = s.paper_id
             WHERE s.paper_id = ${paperId}
+            ORDER BY s.created_at DESC
         `;
         return res;
     }

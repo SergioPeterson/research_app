@@ -24,12 +24,16 @@ import star from "@/assets/icons/star.png";
 import target from "@/assets/icons/target.png";
 import to from "@/assets/icons/to.png";
 import check from "@/assets/images/check.png";
+import login_bg from "@/assets/images/login_bg.png";
 import getStarted from "@/assets/images/get-started.png";
 import message from "@/assets/images/message.png";
 import noResult from "@/assets/images/no-result.png";
 import onboarding1 from "@/assets/images/onboarding1.png";
 import onboarding2 from "@/assets/images/onboarding2.png";
 import onboarding3 from "@/assets/images/onboarding3.png";
+import onboarding_image1 from "@/assets/images/onboarding_image1.png";
+import onboarding_image2 from "@/assets/images/onboarding_image2.png";
+import onboarding_image3 from "@/assets/images/onboarding_image3.png";
 import signUpCar from "@/assets/images/signup-car.png";
 import { default as bookmark, default as bookmarkO, default as heart, default as heartO } from "react-native-vector-icons/FontAwesome";
 
@@ -37,11 +41,15 @@ export const images = {
   onboarding1,
   onboarding2,
   onboarding3,
+  onboarding_image1,
+  onboarding_image2,
+  onboarding_image3,
   getStarted,
   signUpCar,
   check,
   noResult,
   message,
+  login_bg,
 };
 
 export const icons = {
@@ -79,26 +87,27 @@ export const icons = {
 export const onboarding = [
   {
     id: 1,
-    title: "The perfect ride is just a tap away!",
+    title: "Discover research like never before",
     description:
-      "Your journey begins with Ryde. Find your ideal ride effortlessly.",
-    image: images.onboarding1,
+      "Scholaria brings you bite-sized summaries of the world’s newest papers—all in one place.",
+    image: images.onboarding_image1,
   },
   {
     id: 2,
-    title: "Best car in your hands with Ryde",
+    title: "Your feed, your field",
     description:
-      "Discover the convenience of finding your perfect ride with Ryde",
-    image: images.onboarding2,
+      "Personalized recommendations and trending topics tailored to your interests in science, tech, and beyond.",
+    image: images.onboarding_image2,
   },
   {
     id: 3,
-    title: "Your ride, your way. Let's go!",
+    title: "Swipe, save, and spark ideas",
     description:
-      "Enter your destination, sit back, and let us take care of the rest.",
-    image: images.onboarding3,
+      "Explore, react, and connect with the global research community in a whole new way.",
+    image: images.onboarding_image3,
   },
 ];
+
 
 export const data = {
   onboarding,

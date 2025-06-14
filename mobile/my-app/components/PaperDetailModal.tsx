@@ -14,20 +14,20 @@ import {
 import Icon from 'react-native-vector-icons/FontAwesome';
 import CategoriesModal from './categoriesModel';
 import AuthorModal from './authorModel';
+import { fetchAPI } from '@/lib/fetch';
 
 interface PaperDetailModalProps {
   paper: any;
   visible: boolean;
   onClose: () => void;
+  userData?: any;
 }
 
-const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) => {
+const PaperDetailModal = ({ paper, visible, onClose, userData }: PaperDetailModalProps) => {
   const { user } = useUser();
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [saveCount, setSaveCount] = useState(0);
   const [isFollowingCategory, setIsFollowingCategory] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
@@ -36,10 +36,9 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
   useEffect(() => {
     if (user?.id && paper?.paper_id) {
       checkLikeAndSaveStatus();
-      fetchLikeAndSaveCounts();
       checkCategoryFollowStatus();
     }
-  }, [user?.id, paper?.paper_id]);
+  }, [user?.id, paper?.paper_id, userData]);
 
   useEffect(() => {
     return () => {
@@ -57,47 +56,19 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
     }
   }, [visible]);
 
-  const fetchLikeAndSaveCounts = async () => {
-    try {
-      // Fetch total likes for the paper
-      const likesResponse = await fetch(`/(api)/paper/likes?paperId=${paper.paper_id}`);
-      const likesData = await likesResponse.json();
-      setLikeCount(likesData?.data?.length || 0);
-
-      const savesResponse = await fetch(`/(api)/paper/saves?paperId=${paper.paper_id}`);
-      const savesData = await savesResponse.json();
-      setSaveCount(savesData?.data?.length || 0);
-    } catch (error) {
-      console.error('Error fetching counts:', error);
-    }
+  const checkLikeAndSaveStatus = () => {
+    if (!userData) return;
+    
+    // Check if paper is liked using userData
+    setIsLiked(userData.likes?.some((p: any) => p.paper_id === paper.paper_id) || false);
+    
+    // Check if paper is saved using userData
+    setIsSaved(userData.saves?.some((p: any) => p.paper_id === paper.paper_id) || false);
   };
 
-  const checkLikeAndSaveStatus = async () => {
-    try {
-      // Check if paper is liked
-      const likedResponse = await fetch(`/(api)/user/${user?.id}/likes`);
-      const likedData = await likedResponse.json();
-      setIsLiked(likedData?.data?.some((p: any) => p.paper_id === paper.paper_id) || false);
-
-      // Check if paper is saved
-      const savedResponse = await fetch(`/(api)/user/${user?.id}/saves`);
-      const savedData = await savedResponse.json();
-      setIsSaved(savedData?.data?.some((p: any) => p.paper_id === paper.paper_id) || false);
-    } catch (error) {
-      console.error('Error checking paper status:', error);
-      setIsLiked(false);
-      setIsSaved(false);
-    }
-  };
-
-  const checkCategoryFollowStatus = async () => {
-    try {
-      const response = await fetch(`/(api)/user/${user?.id}/categories`);
-      const data = await response.json();
-      setIsFollowingCategory(data?.data?.some((c: any) => c.category === paper.category) || false);
-    } catch (error) {
-      console.error('Error checking category follow status:', error);
-    }
+  const checkCategoryFollowStatus = () => {
+    if (!userData) return;
+    setIsFollowingCategory(userData.categories?.includes(paper.category) || false);
   };
 
   const handleCategoryPress = () => {
@@ -108,13 +79,13 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
   const handleCategoryConfirm = async () => {
     try {
       const method = isFollowingCategory ? 'DELETE' : 'POST';
-      const response = await fetch(`/(api)/user/${user?.id}/categories`, {
+      const response = await fetchAPI(`/(api)/user/${user?.id}/categories`, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: paper.category }),
       });
       
-      if (response.ok) {
+      if (response) {
         setIsFollowingCategory(!isFollowingCategory);
       }
     } catch (error) {
@@ -135,14 +106,13 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
     setLoading(true);
     try {
       const method = isLiked ? 'DELETE' : 'POST';
-      const response = await fetch(`/(api)/user/${user.id}/likes`, {
+      const response = await fetchAPI(`/(api)/user/${user.id}/likes`, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paperId: paper.paper_id, clerkId: user.id }),
       });
-      if (response.ok) {
+      if (response) {
         setIsLiked(!isLiked);
-        setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -156,14 +126,13 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
     setLoading(true);
     try {
       const method = isSaved ? 'DELETE' : 'POST';
-      const response = await fetch(`/(api)/user/${user.id}/saves`, {
+      const response = await fetchAPI(`/(api)/user/${user.id}/saves`, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paperId: paper.paper_id, clerkId: user.id }),
       });
-      if (response.ok) {
+      if (response) {
         setIsSaved(!isSaved);
-        setSaveCount(prev => isSaved ? prev - 1 : prev + 1);
       }
     } catch (error) {
       console.error('Error toggling save:', error);
@@ -211,13 +180,13 @@ const PaperDetailModal = ({ paper, visible, onClose }: PaperDetailModalProps) =>
                   <TouchableOpacity onPress={handleLike} disabled={loading} className="p-2">
                     {isLiked ? <Icon name="heart" size={24} color="black" /> : <Icon name="heart-o" size={24} color="black" />}
                   </TouchableOpacity>
-                  <Text className="text-xs text-gray-600">{likeCount}</Text>
+                  <Text className="text-xs text-gray-600">{paper.likes_count || 0}</Text>
                 </View>
                 <View className="items-center">
                   <TouchableOpacity onPress={handleSave} disabled={loading} className="p-2">
                     {isSaved ? <Icon name="bookmark" size={24} color="black" /> : <Icon name="bookmark-o" size={24} color="black" />}
                   </TouchableOpacity>
-                  <Text className="text-xs text-gray-600">{saveCount}</Text>
+                  <Text className="text-xs text-gray-600">{paper.save_count || 0}</Text>
                 </View>
               </View>
             </View>

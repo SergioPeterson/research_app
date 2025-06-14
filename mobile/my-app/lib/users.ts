@@ -47,23 +47,122 @@ export async function getUsers() {
 /**
  * This function is used to get a user by their clerk id
  * @param clerkId - The clerk id of the user
- * @returns The user object
+ * @returns The user object with their categories, likes, and saves
  */
 export async function getUserByClerkId(clerkId: string) {
   if (dbIsLocal) {
     const pool = getLocalPool();
-    const res = await pool.query("SELECT * FROM users WHERE clerk_id = $1", [clerkId]);
-    if (res.rows.length === 0) {
-      return null;
-    }
-    return res.rows[0];
+    const res = await pool.query(
+      `
+      SELECT
+        u.*,
+        COALESCE(
+          (
+            SELECT json_agg(DISTINCT p.category)
+            FROM user_likes ul
+            JOIN arxiv_papers p ON ul.paper_id = p.paper_id
+            WHERE ul.user_id = $1
+          ),
+          '[]'
+        ) AS categories,
+        COALESCE(
+          (
+            SELECT json_agg(row_to_json(like_row))
+            FROM (
+              SELECT
+                p.paper_id,
+                p.title,
+                p.authors,
+                p.category,
+                p.published
+              FROM user_likes ul
+              JOIN arxiv_papers p ON ul.paper_id = p.paper_id
+              WHERE ul.user_id = $1
+              ORDER BY p.published DESC
+            ) AS like_row
+          ),
+          '[]'
+        ) AS likes,
+        COALESCE(
+          (
+            SELECT json_agg(row_to_json(save_row))
+            FROM (
+              SELECT
+                p.paper_id,
+                p.title,
+                p.authors,
+                p.category,
+                p.published
+              FROM user_saves us
+              JOIN arxiv_papers p ON us.paper_id = p.paper_id
+              WHERE us.user_id = $1
+              ORDER BY p.published DESC
+            ) AS save_row
+          ),
+          '[]'
+        ) AS saves
+      FROM users u
+      WHERE u.clerk_id = $1
+      `,
+      [clerkId]
+    );
+    console.log(res.rows[0]);
+    return res.rows[0] ?? null;
   } else {
     const sql = getNeonClient();
-    const res = await sql`SELECT * FROM users WHERE clerk_id = ${clerkId}`;
-    if (res.length === 0) {
-      return null;
-    }
-    return res[0];
+    const rows = await sql`
+      SELECT
+        u.*,
+        COALESCE(
+          (
+            SELECT json_agg(DISTINCT p.category)
+            FROM user_likes ul
+            JOIN arxiv_papers p ON ul.paper_id = p.paper_id
+            WHERE ul.user_id = ${clerkId}
+          ),
+          '[]'
+        ) AS categories,
+        COALESCE(
+          (
+            SELECT json_agg(row_to_json(like_row))
+            FROM (
+              SELECT
+                p.paper_id,
+                p.title,
+                p.authors,
+                p.category,
+                p.published
+              FROM user_likes ul
+              JOIN arxiv_papers p ON ul.paper_id = p.paper_id
+              WHERE ul.user_id = ${clerkId}
+              ORDER BY p.published DESC
+            ) AS like_row
+          ),
+          '[]'
+        ) AS likes,
+        COALESCE(
+          (
+            SELECT json_agg(row_to_json(save_row))
+            FROM (
+              SELECT
+                p.paper_id,
+                p.title,
+                p.authors,
+                p.category,
+                p.published
+              FROM user_saves us
+              JOIN arxiv_papers p ON us.paper_id = p.paper_id
+              WHERE us.user_id = ${clerkId}
+              ORDER BY p.published DESC
+            ) AS save_row
+          ),
+          '[]'
+        ) AS saves
+      FROM users u
+      WHERE u.clerk_id = ${clerkId}
+    `;
+    console.log(rows[0]);
+    return rows[0] ?? null;
   }
 }
 

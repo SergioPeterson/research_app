@@ -6,6 +6,7 @@ import { PaperCard } from "../../../components/PaperCard";
 import PaperDetailModal from "../../../components/PaperDetailModal";
 import { Ionicons } from '@expo/vector-icons';
 import { icons } from "../../../constants";
+import { fetchAPI } from '@/lib/fetch';
 
 interface Paper {
     paper_id: string;
@@ -32,13 +33,11 @@ export default function Following() {
         async function fetchPapers() {
             try {
                 // Get followed authors
-                const authorsResponse = await fetch(`/(api)/user/${userId}/authors`);
-                const authorsData = await authorsResponse.json();
+                const authorsData = await fetchAPI(`/(api)/user/${userId}/authors`);
                 const authors = authorsData.data.map((a: any) => a.author);
 
                 // Get followed organizations
-                const orgsResponse = await fetch(`/(api)/user/${userId}/orgs`);
-                const orgsData = await orgsResponse.json();
+                const orgsData = await fetchAPI(`/(api)/user/${userId}/orgs`);
                 const orgs = orgsData.data.map((o: any) => o.organization);
 
                 if (authors.length === 0 && orgs.length === 0) {
@@ -51,8 +50,7 @@ export default function Following() {
                 if (authors.length > 0) searchParams.append('authors', authors.join(','));
                 if (orgs.length > 0) searchParams.append('orgs', orgs.join(','));
                 
-                const papersResponse = await fetch(`/(api)/paper/search?${searchParams.toString()}`);
-                const papersData = await papersResponse.json();
+                const papersData = await fetchAPI(`/(api)/paper/search?${searchParams.toString()}`);
                 setPapers(papersData.data);
             } catch (err) {
                 setError('Failed to fetch papers');

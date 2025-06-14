@@ -4,8 +4,10 @@ import { useClerk, useUser } from "@clerk/clerk-expo";
 import Constants from "expo-constants";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { fetchAPI } from '@/lib/fetch';
 
 type TabType = 'saved' | 'liked';
 
@@ -34,9 +36,8 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`/(api)/user/${user?.id}`);
-        const result = await response.json();
-        if (response.ok) {
+        const result = await fetchAPI(`/(api)/user/${user?.id}`);
+        if (result) {
           setUserData(result.data);
         } else {
           console.error("Error fetching user data:", result.error);
@@ -97,7 +98,7 @@ const Profile = () => {
       }
 
       if (user?.id) {
-        const updateResponse = await fetch(`/(api)/user/${user.id}`, {
+        const updatedUserData = await fetchAPI(`/(api)/user/${user.id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -107,11 +108,9 @@ const Profile = () => {
             profile_image_url: cloudData.secure_url,
           }),
         });
-        if (!updateResponse.ok) {
-          throw new Error("Failed to update profile in database");
+        if (updatedUserData) {
+          setUserData(updatedUserData.data);
         }
-        const updatedUserData = await updateResponse.json();
-        setUserData(updatedUserData.data);
       }
     } catch (err) {
       console.error("Image upload error:", err);
@@ -122,48 +121,34 @@ const Profile = () => {
   };
 
   const fetchUserPapers = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !userData) return;
     setLoadingPapers(true);
     try {
-      const savedResponse = await fetch(`/(api)/user/${user.id}/saves`);
-      const savedResult = await savedResponse.json();
-      if (savedResponse.ok) {
-        // Fetch paper details for each saved paper
-        const savedPapersWithDetails = await Promise.all(
-          savedResult.data.map(async (paper: any) => {
-            const paperResponse = await fetch(`/(api)/paper/${paper.paper_id}`);
-            const paperData = await paperResponse.json();
-            return { ...paper, paperDetails: paperData.data };
-          })
-        );
-        setSavedPapers(savedPapersWithDetails);
-      }
+      // Use saves directly from userData
+      const savedPapersWithDetails = userData.saves.map((paper: any) => ({
+        ...paper,
+        paperDetails: paper
+      }));
+      setSavedPapers(savedPapersWithDetails);
 
-      const likedResponse = await fetch(`/(api)/user/${user.id}/likes`);
-      const likedResult = await likedResponse.json();
-      if (likedResponse.ok) {
-        // Fetch paper details for each liked paper
-        const likedPapersWithDetails = await Promise.all(
-          likedResult.data.map(async (paper: any) => {
-            const paperResponse = await fetch(`/(api)/paper/${paper.paper_id}`);
-            const paperData = await paperResponse.json();
-            return { ...paper, paperDetails: paperData.data };
-          })
-        );
-        setLikedPapers(likedPapersWithDetails);
-      }
+      // Use likes directly from userData
+      const likedPapersWithDetails = userData.likes.map((paper: any) => ({
+        ...paper,
+        paperDetails: paper
+      }));
+      setLikedPapers(likedPapersWithDetails);
     } catch (error) {
-      console.error("Error fetching user papers:", error);
+      console.error("Error processing user papers:", error);
     } finally {
       setLoadingPapers(false);
     }
   };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && userData) {
       fetchUserPapers();
     }
-  }, [user?.id]);
+  }, [user?.id, userData]);
 
   const renderPaperCard = ({ item }: { item: any }) => {
     return (

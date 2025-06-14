@@ -75,7 +75,7 @@
 
 #### Get User by ID
 ```http
-GET /api/users/:id
+GET /api/user/:id
 ```
 Returns user information by ID.
 
@@ -98,7 +98,7 @@ Returns user information by ID.
 
 #### Create User
 ```http
-POST /api/users
+POST /api/user
 ```
 Create a new user.
 
@@ -130,11 +130,11 @@ Create a new user.
 }
 ```
 
-#### PATCH User
+#### Update User
 ```http
-PUT /api/users/:id
+PATCH /api/user/:id
 ```
-PATCH user information.
+Update user information.
 
 **Response Codes**
 - `200 OK`: User updated successfully
@@ -145,26 +145,31 @@ PATCH user information.
 **Request Body**
 ```json
 {
-  "name": "John Doe Updated",
-  "org": "New University",
-  "interests": ["deep learning", "nlp"]
+  "affiliations": ["University A", "Organization B"],
+  "interests": ["deep learning", "nlp"],
+  "role": "Researcher",
+  "profile_image_url": "https://example.com/image.jpg"
 }
 ```
 
 **Response**
 ```json
 {
-  "id": 1,
-  "name": "John Doe Updated",
-  "email": "john@example.com",
-  "org": "New University",
-  "interests": ["deep learning", "nlp"]
+  "data": {
+    "clerk_id": "clerk_123",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "affiliations": ["University A", "Organization B"],
+    "interests": ["deep learning", "nlp"],
+    "role": "Researcher",
+    "profile_image_url": "https://example.com/image.jpg"
+  }
 }
 ```
 
 #### Delete User
 ```http
-DELETE /api/users/:id
+DELETE /api/user/:id
 ```
 Delete a user by ID.
 
@@ -176,7 +181,11 @@ Delete a user by ID.
 **Response**
 ```json
 {
-  "message": "User deleted successfully"
+  "data": {
+    "clerk_id": "clerk_123",
+    "name": "John Doe",
+    "email": "john@example.com"
+  }
 }
 ```
 
@@ -234,7 +243,7 @@ Returns all papers saved by the user.
 
 #### Get Recommended Papers
 ```http
-GET /api/users/:id/recommendations
+GET /api/recommendation/:id
 ```
 Returns personalized paper recommendations for the user.
 
@@ -246,7 +255,7 @@ Returns personalized paper recommendations for the user.
 **Response**
 ```json
 {
-  "recommendations": [
+  "data": [
     {
         "id": "2101.12345",
         "title": "Example Paper",
@@ -254,15 +263,41 @@ Returns personalized paper recommendations for the user.
         "published": "2021-01-01T00:00:00Z",
         "authors": ["Author 1", "Author 2"]
     }
-  ]
+  ],
+  "error": null
 }
 ```
 
 ### Paper Endpoints
 
+#### Get All Papers
+```http
+GET /api/paper
+```
+Returns all papers.
+
+**Response Codes**
+- `200 OK`: Papers retrieved successfully
+- `500 Internal Server Error`: Server error occurred
+
+**Response**
+```json
+{
+  "data": [
+    {
+      "id": "2101.12345",
+      "title": "Example Paper",
+      "abstract": "Paper abstract...",
+      "published": "2021-01-01T00:00:00Z",
+      "authors": ["Author 1", "Author 2"]
+    }
+  ]
+}
+```
+
 #### Get Paper by ID
 ```http
-GET /api/papers/:id
+GET /api/paper/:id
 ```
 Returns detailed information about a specific paper.
 
@@ -274,25 +309,27 @@ Returns detailed information about a specific paper.
 **Response**
 ```json
 {
-  "id": "2101.12345",
-  "title": "Example Paper",
-  "abstract": "Paper abstract...",
-  "published": "2021-01-01T00:00:00Z",
-  "authors": ["Author 1", "Author 2"],
-  "comment": "Additional comments",
-  "category": "cs.AI",
-  "link": "https://arxiv.org/abs/2101.12345",
-  "summary": "Generated summary...",
-  "keywords": ["keyword1", "keyword2"],
-  "organizations": ["Org 1", "Org 2"]
+  "data": {
+    "id": "2101.12345",
+    "title": "Example Paper",
+    "abstract": "Paper abstract...",
+    "published": "2021-01-01T00:00:00Z",
+    "authors": ["Author 1", "Author 2"],
+    "comment": "Additional comments",
+    "category": "cs.AI",
+    "link": "https://arxiv.org/abs/2101.12345",
+    "summary": "Generated summary...",
+    "keywords": ["keyword1", "keyword2"],
+    "organizations": ["Org 1", "Org 2"]
+  }
 }
 ```
 
-#### Filter Papers
+#### Search Papers
 ```http
-GET /api/papers
+GET /api/paper/search?query=<search_term>
 ```
-Filter papers by various criteria.
+Search for papers by title, authors, or categories.
 
 **Response Codes**
 - `200 OK`: Papers retrieved successfully
@@ -300,18 +337,12 @@ Filter papers by various criteria.
 - `500 Internal Server Error`: Server error occurred
 
 **Query Parameters**
-- `date_from`: Start date (YYYY-MM-DD)
-- `date_to`: End date (YYYY-MM-DD)
-- `authors`: Comma-separated author names
-- `categories`: Comma-separated categories
-- `keywords`: Comma-separated keywords
-- `limit`: Number of results (default: 20)
-- `offset`: Pagination offset (default: 0)
+- `query`: Search term (required)
 
 **Response**
 ```json
 {
-  "papers": [
+  "data": [
     {
       "id": "2101.12345",
       "title": "Example Paper",
@@ -319,33 +350,32 @@ Filter papers by various criteria.
       "published": "2021-01-01T00:00:00Z",
       "authors": ["Author 1", "Author 2"]
     }
-  ],
-  "total": 100,
-  "limit": 20,
-  "offset": 0
+  ]
 }
 ```
 
 #### Get Users Who Liked Paper
 ```http
-GET /api/papers/:id/liked-by
+GET /api/paper/likes?paperId=<paper_id>
 ```
 Returns all users who liked a specific paper.
 
 **Response Codes**
 - `200 OK`: Users retrieved successfully
-- `404 Not Found`: Paper with specified ID does not exist
+- `400 Bad Request`: Missing paper ID
 - `500 Internal Server Error`: Server error occurred
+
+**Query Parameters**
+- `paperId`: Paper ID (required)
 
 **Response**
 ```json
 {
-  "users": [
+  "data": [
     {
-      "id": 1,
+      "id": "clerk_123",
       "name": "John Doe",
-      "email": "john@example.com",
-      "org": "University of Example"
+      "email": "john@example.com"
     }
   ]
 }
@@ -353,24 +383,144 @@ Returns all users who liked a specific paper.
 
 #### Get Users Who Saved Paper
 ```http
-GET /api/papers/:id/saved-by
+GET /api/paper/saves?paperId=<paper_id>
 ```
 Returns all users who saved a specific paper.
 
 **Response Codes**
 - `200 OK`: Users retrieved successfully
-- `404 Not Found`: Paper with specified ID does not exist
+- `400 Bad Request`: Missing paper ID
+- `500 Internal Server Error`: Server error occurred
+
+**Query Parameters**
+- `paperId`: Paper ID (required)
+
+**Response**
+```json
+{
+  "data": [
+    {
+      "id": "clerk_123",
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  ]
+}
+```
+
+### Trends Endpoints
+
+#### Get Trend Statistics
+```http
+GET /api/trends/stats?period=<period>
+```
+Returns statistics about paper trends over a specific period.
+
+**Response Codes**
+- `200 OK`: Statistics retrieved successfully
+- `500 Internal Server Error`: Server error occurred
+
+**Query Parameters**
+- `period`: Time period for statistics (day, week, month, all). Defaults to "week"
+
+**Response**
+```json
+{
+  "data": [
+    {
+      "date": "2023-01-01",
+      "likes": 10,
+      "saves": 5,
+      "views": 100
+    },
+    {
+      "date": "2023-01-02",
+      "likes": 15,
+      "saves": 8,
+      "views": 150
+    }
+  ]
+}
+```
+
+#### Get Top Papers
+```http
+GET /api/trends/top?period=<period>
+```
+Returns top papers for a specified period.
+
+**Response Codes**
+- `200 OK`: Papers retrieved successfully
+- `400 Bad Request`: Missing period parameter
+- `500 Internal Server Error`: Server error occurred
+
+**Query Parameters**
+- `period`: Time period (required)
+
+**Response**
+```json
+{
+  "data": [
+    {
+      "id": "2101.12345",
+      "title": "Example Paper",
+      "abstract": "Paper abstract...",
+      "published": "2021-01-01T00:00:00Z",
+      "authors": ["Author 1", "Author 2"]
+    }
+  ]
+}
+```
+
+#### Get Hot Papers
+```http
+GET /api/trends/hot?period=<period>
+```
+Returns trending (hot) papers for a specified period.
+
+**Response Codes**
+- `200 OK`: Papers retrieved successfully
+- `400 Bad Request`: Missing period parameter
+- `500 Internal Server Error`: Server error occurred
+
+**Query Parameters**
+- `period`: Time period (required)
+
+**Response**
+```json
+{
+  "data": [
+    {
+      "id": "2101.12345",
+      "title": "Example Paper",
+      "abstract": "Paper abstract...",
+      "published": "2021-01-01T00:00:00Z",
+      "authors": ["Author 1", "Author 2"]
+    }
+  ]
+}
+```
+
+#### Get Newest Papers
+```http
+GET /api/trends/new
+```
+Returns the newest papers.
+
+**Response Codes**
+- `200 OK`: Papers retrieved successfully
 - `500 Internal Server Error`: Server error occurred
 
 **Response**
 ```json
 {
-  "users": [
+  "data": [
     {
-      "id": 1,
-      "name": "John Doe",
-      "email": "john@example.com",
-      "org": "University of Example"
+      "id": "2101.12345",
+      "title": "Example Paper",
+      "abstract": "Paper abstract...",
+      "published": "2021-01-01T00:00:00Z",
+      "authors": ["Author 1", "Author 2"]
     }
   ]
 }

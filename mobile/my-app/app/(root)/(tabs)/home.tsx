@@ -2,7 +2,8 @@ import PaperDetailModal from "@/components/PaperDetailModal";
 import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo";
 import Constants from "expo-constants";
 import { Link } from "expo-router";
-import React, { useEffect, useState } from "react";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import {
   FlatList,
   SafeAreaView,
@@ -12,6 +13,7 @@ import {
   View
 } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { fetchAPI } from '@/lib/fetch';
 
 const Home = () => {
   const isLocal = Constants.expoConfig!.extra?.USE_LOCAL_DATABASE === "true";
@@ -28,9 +30,8 @@ const Home = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`/(api)/user/${user?.id}`);
-        const result = await response.json();
-        if (response.ok) {
+        const result = await fetchAPI(`/(api)/user/${user?.id}`);
+        if (result) {
           setUserData(result.data);
         } else {
           console.error("Error fetching user data:", result.error);
@@ -45,23 +46,12 @@ const Home = () => {
   const fetchPapers = async () => {
     try {
       // First fetch specific papers
-      // const paper1 = await fetch(`/(api)/paper/2505.22947v1`);
+      // const paper1 = await fetchAPI(`/(api)/paper/2505.22947v1`);
       // const result1 = await paper1.json();
           
-      // Then fetch recommended papers
-      const response = await fetch(`/(api)/recommendation/${user?.id}`);
-      const result = await response.json();
-      
-      if (response.ok) {
-        // Combine specific papers with the rest
-        const combinedPapers = [
-          ...result.data
-        ];
-        setPapers(combinedPapers);
-        setFilteredPapers(combinedPapers);
-      } else {
-        console.error("Error fetching papers:", result.error);
-      }
+      const result = await fetchAPI(`/(api)/recommendation/${user?.id}`);
+      setPapers(result.data);
+      setFilteredPapers(result.data);
     } catch (error) {
       console.error("Error fetching papers:", error);
     }
@@ -70,7 +60,6 @@ const Home = () => {
   useEffect(() => {
     fetchPapers();
     setLocalDB(isLocal);
-    // console.log("isLocal", isLocal);
   }, []);
 
 
@@ -106,8 +95,7 @@ const Home = () => {
 
     // If we don't have enough local results, make an API call
     try {
-      const response = await fetch(`/(api)/paper/search?query=${query}`);
-      const result = await response.json();
+      const result = await fetchAPI(`/(api)/paper/search?query=${query}`);
       setFilteredPapers(result.data);
     } catch (error) {
       console.error("Error searching papers:", error);
@@ -246,6 +234,7 @@ const Home = () => {
             setIsModalVisible(false);
             setSelectedPaper(null);
           }}
+          userData={userData}
         />
       </SignedIn>
 
