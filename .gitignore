@@ -2,7 +2,6 @@
 __pycache__/
 .env
 *.pdf
-*.txt
 *.jsonl
 *.jsonl.gz
 *.jsonl.gz.part
